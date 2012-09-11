@@ -1,4 +1,4 @@
-package com.stencyl.extensions;
+package;
 
 #if cpp
 import cpp.Lib;
