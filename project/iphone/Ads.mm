@@ -27,6 +27,22 @@
 @synthesize contentView = _contentView;
 @synthesize visible = _isVisible;
 
+- (BOOL)bannerViewActionShouldBegin:(ADBannerView*)banner willLeaveApplication:(BOOL)willLeave
+{
+	NSLog(@"User opened ad.");
+	
+	_isVisible = false;	
+   	[self fixupAdView:[UIApplication sharedApplication].statusBarOrientation];
+}
+
+- (void)bannerViewActionDidFinish:(ADBannerView*)banner
+{
+	NSLog(@"User closed ad.");
+	
+	_isVisible = true;
+	[self fixupAdView:[UIApplication sharedApplication].statusBarOrientation];
+}
+
 - (void)bannerViewDidLoadAd:(ADBannerView*)banner
 {
     NSLog(@"Loaded ad. Show it.");
