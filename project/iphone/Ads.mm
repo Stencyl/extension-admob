@@ -16,6 +16,8 @@
 @property (nonatomic, retain) UIView* contentView;
 @property (nonatomic) BOOL visible;
 
+-(void)showAd;
+-(void)hideAd;
 -(void)fixupAdView:(UIInterfaceOrientation)toDeviceOrientation;
 -(int)getBannerHeight:(UIInterfaceOrientation)orientation;
 
@@ -27,20 +29,30 @@
 @synthesize contentView = _contentView;
 @synthesize visible = _isVisible;
 
+-(void)showAd
+{
+	NSLog(@"Set Ad to Visible");
+	_isVisible = true;	
+   	[self fixupAdView:[UIApplication sharedApplication].statusBarOrientation];
+}
+
+-(void)hideAd
+{
+	NSLog(@"Set Ad to Hidden");
+	_isVisible = false;
+	[self fixupAdView:[UIApplication sharedApplication].statusBarOrientation];
+}
+
 - (BOOL)bannerViewActionShouldBegin:(ADBannerView*)banner willLeaveApplication:(BOOL)willLeave
 {
 	NSLog(@"User opened ad.");
-	
-	_isVisible = false;	
-   	[self fixupAdView:[UIApplication sharedApplication].statusBarOrientation];
+	[self hideAd];
 }
 
 - (void)bannerViewActionDidFinish:(ADBannerView*)banner
 {
 	NSLog(@"User closed ad.");
-	
-	_isVisible = true;
-	[self fixupAdView:[UIApplication sharedApplication].statusBarOrientation];
+	[self showAd];
 }
 
 - (void)bannerViewDidLoadAd:(ADBannerView*)banner
@@ -49,8 +61,7 @@
     
     if(!_isVisible)
     {
-    	_isVisible = true;
-    	[self fixupAdView:[UIApplication sharedApplication].statusBarOrientation];
+    	[self showAd];
     }
 }
 
@@ -60,8 +71,7 @@
    
     if(_isVisible)
     {
-   		_isVisible = false;	
-   		[self fixupAdView:[UIApplication sharedApplication].statusBarOrientation];
+   		[self hideAd];
    	}
 }
 
@@ -273,7 +283,7 @@ namespace ads
             init();
         }
         
-        adController.bannerView.hidden = NO;
+        [adController showAd];
     }
 
     void hideAd()
@@ -283,6 +293,6 @@ namespace ads
             init();
         }
         
-        adController.bannerView.hidden = YES;
+        [adController hideAd];
     }
 }
