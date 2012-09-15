@@ -12,7 +12,15 @@
 
 using namespace ads;
 
+AutoGCRoot* adEventHandle = 0;
+
 #ifdef IPHONE
+
+static void ads_set_event_handle(value onEvent)
+{
+	adEventHandle = new AutoGCRoot(onEvent);
+}
+DEFINE_PRIM(ads_set_event_handle, 1);
 
 void ads_showad(value position)
 {
@@ -37,4 +45,12 @@ DEFINE_ENTRY_POINT(ads_main);
 extern "C" int ads_register_prims() 
 { 
     return 0; 
+}
+
+extern "C" void sendEvent(char* type)
+{
+    printf("Send Event: %s\n", type);
+    value o = alloc_empty_object();
+    alloc_field(o,val_id("type"),alloc_string(type));
+    val_call1(adEventHandle->get(), o);
 }

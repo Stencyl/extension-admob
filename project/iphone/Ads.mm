@@ -5,6 +5,8 @@
 
 //---
 
+extern "C" void sendEvent(char* event);
+
 @interface AdController : UIViewController <ADBannerViewDelegate>
 {
     ADBannerView* _bannerView;
@@ -46,18 +48,23 @@
 - (BOOL)bannerViewActionShouldBegin:(ADBannerView*)banner willLeaveApplication:(BOOL)willLeave
 {
 	NSLog(@"User opened ad.");
+	sendEvent("open");
+	
 	[self hideAd];
 }
 
 - (void)bannerViewActionDidFinish:(ADBannerView*)banner
 {
 	NSLog(@"User closed ad.");
+	sendEvent("close");
+	
 	[self showAd];
 }
 
 - (void)bannerViewDidLoadAd:(ADBannerView*)banner
 {
     NSLog(@"Loaded ad. Show it.");
+    sendEvent("load");
     
     if(!_isVisible)
     {
@@ -68,6 +75,7 @@
 - (void)bannerView:(ADBannerView*)banner didFailToReceiveAdWithError:(NSError*)error
 {
     NSLog(@"Could not load ad. Hide it.");
+   sendEvent("fail");
    
     if(_isVisible)
     {
