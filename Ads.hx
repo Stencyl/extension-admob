@@ -8,6 +8,10 @@ import neko.Lib;
 import nme.Lib;
 #end
 
+import com.stencyl.Engine;
+import com.stencyl.event.EventMaster;
+import com.stencyl.event.StencylEvent;
+
 import nme.utils.ByteArray;
 import nme.display.BitmapData;
 import nme.geom.Rectangle;
@@ -24,21 +28,25 @@ class Ads
 		if(data == "open")
 		{
 			trace("USER OPENED IT");
+			Engine.events.addAdEvent(new StencylEvent(StencylEvent.AD_USER_OPEN));
 		}
 		
 		if(data == "close")
 		{
 			trace("USER CLOSED IT");
+			Engine.events.addAdEvent(new StencylEvent(StencylEvent.AD_USER_CLOSE));
 		}
 		
 		if(data == "load")
 		{
 			trace("IT SHOWED UP");
+			Engine.events.addAdEvent(new StencylEvent(StencylEvent.AD_LOADED));
 		}
 		
 		if(data == "fail")
 		{
 			trace("IT FAILED TO LOAD");
+			Engine.events.addAdEvent(new StencylEvent(StencylEvent.AD_FAILED));
 		}
 		#end
 	}

@@ -75,7 +75,7 @@ extern "C" void sendEvent(char* event);
 - (void)bannerView:(ADBannerView*)banner didFailToReceiveAdWithError:(NSError*)error
 {
     NSLog(@"Could not load ad. Hide it.");
-   sendEvent("fail");
+    sendEvent("fail");
    
     if(_isVisible)
     {
