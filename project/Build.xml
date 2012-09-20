@@ -21,6 +21,11 @@
 		<file name="iphone/Ads.mm"/>
     </files>
     
+    <files id="android">
+      	<depend name="${HXCPP}/include/hx/Macros.h"/>
+      	<depend name="${HXCPP}/include/hx/CFFI.h"/>
+  	</files>
+    
 	<files id="common">
 		<compilerflag value="-Iinclude"/>
 		<file name="common/ExternalInterface.cpp"/>
@@ -48,6 +53,7 @@
 		<outdir name="../ndll/${BINDIR}" />
 		<ext value=".ndll" unless="mobile"/>
 		<files id="iphone" if="iphone"/>
+		<files id="android" if="android"/>
 		<files id="common"/>
 	</target>
 

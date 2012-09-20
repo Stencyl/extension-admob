@@ -10,7 +10,30 @@
 #include "Ads.h"
 #include <stdio.h>
 
+#ifdef ANDROID
+#include <jni.h>
+#endif
+
 using namespace ads;
+
+#ifdef ANDROID
+	extern JNIEnv *GetEnv();
+	enum JNIType{
+	   jniUnknown,
+	   jniVoid,
+	   jniObjectString,
+	   jniObjectArray,
+	   jniObject,
+	   jniBoolean,
+	   jniByte,
+	   jniChar,
+	   jniShort,
+	   jniInt,
+	   jniLong,
+	   jniFloat,
+	   jniDouble,
+	};
+#endif
 
 AutoGCRoot* adEventHandle = 0;
 
