@@ -55,7 +55,7 @@ public class AdWhirl
 			
 				RelativeLayout.LayoutParams p = new RelativeLayout.LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT); 
 				ViewGroup view = (ViewGroup) activity.getWindow().getDecorView();
-				FrameLayout content = (FrameLayout) view.getChildAt(0);
+				ViewGroup content = (ViewGroup) view.getChildAt(0);
 				content.addView(adLayout, p);
 			}
 		});
