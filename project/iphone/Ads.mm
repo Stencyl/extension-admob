@@ -5,6 +5,59 @@
 
 //---
 
+@interface GlassPane : UIView
+@end
+
+@implementation GlassPane
+
+-(BOOL)pointInside:(CGPoint)point withEvent:(UIEvent*)event
+{
+    for(UIView *subview in self.subviews)
+    {
+    	UIInterfaceOrientation o = [UIApplication sharedApplication].statusBarOrientation;
+    	CGPoint innerPoint;
+    	
+    	if(UIInterfaceOrientationIsLandscape(o))
+    	{
+    		innerPoint = CGPointMake(point.y - subview.frame.origin.y, point.x - subview.frame.origin.x);
+    	}
+    	
+    	else
+    	{
+    		innerPoint = CGPointMake(point.x - subview.frame.origin.x, point.y - subview.frame.origin.y);
+    	}
+                              
+        if([subview pointInside:innerPoint withEvent:event]) 
+        {
+        	return YES;
+        }
+    }
+    
+    return NO;
+}
+
+@end
+
+//---
+
+@interface GlassPaneViewController : UIViewController
+{
+}
+
+@end
+
+@implementation GlassPaneViewController 
+
+- (void)loadView
+{
+    CGRect screenBounds = [UIScreen mainScreen].bounds;
+    self.view = [[GlassPane alloc] initWithFrame:screenBounds];
+}
+
+@end
+
+//---
+
 extern "C" void sendEvent(char* event);
 
 @interface AdController : UIViewController <ADBannerViewDelegate>
@@ -274,10 +327,9 @@ namespace ads
 	
 			[[NSNotificationCenter defaultCenter] addObserver:c selector:@selector(orientationChanged:) name:@"UIDeviceOrientationDidChangeNotification" object:nil];
 			
-			UIViewController* vc = [[UIViewController alloc] init];
+			GlassPaneViewController* vc = [[GlassPaneViewController alloc] init];
             c.contentView = vc.view;
-            
-			[window addSubview: vc.view];
+			[window addSubview:vc.view];
             [vc.view addSubview:_adBannerView];        
 		}
 
