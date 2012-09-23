@@ -35,7 +35,7 @@ class Ads
 	//Ad Events only happen on iOS. AdWhirl provides no out-of-the-box way.
 	private static function notifyListeners(inEvent:Dynamic)
 	{
-		#if(mobile && !android)
+		#if(mobile && !android && !air)
 		var data:String = Std.string(Reflect.field(inEvent, "type"));
 		
 		if(data == "open")
@@ -66,7 +66,7 @@ class Ads
 
 	public static function initialize(apiCode:String = "none"):Void 
 	{
-		#if(mobile && !android)
+		#if(mobile && !android && !air)
 		if(!initialized)
 		{
 			set_event_handle(notifyListeners);
@@ -95,7 +95,7 @@ class Ads
 
 	public static function showAd(position:Int = 0):Void
 	{
-		#if(mobile && !android)
+		#if(mobile && !android && !air)
 		ads_showad(position);
 		#end
 		
@@ -118,7 +118,7 @@ class Ads
 	
 	public static function hideAd():Void
 	{
-		#if(mobile && !android)
+		#if(mobile && !android && !air)
 		ads_hidead();
 		#end
 		
@@ -138,7 +138,7 @@ class Ads
 		#end
 	}
 	
-	#if(mobile && !android)
+	#if(mobile && !android && !air)
 	private static var set_event_handle = nme.Loader.load("ads_set_event_handle", 1);
 	private static var ads_showad = nme.Loader.load("ads_showad", 1);
 	private static var ads_hidead = nme.Loader.load("ads_hidead", 0);
