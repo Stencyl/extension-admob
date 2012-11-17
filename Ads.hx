@@ -93,10 +93,10 @@ class Ads
 		#end
 	}
 
-	public static function showAd(position:Int = 0):Void
+	public static function showAd(onBottom:Bool = true):Void
 	{
 		#if(mobile && !android && !air)
-		ads_showad(position);
+		ads_showad(onBottom ? 0 : 1);
 		#end
 		
 		#if android

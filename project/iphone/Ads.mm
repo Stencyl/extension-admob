@@ -65,12 +65,16 @@ extern "C" void sendEvent(char* event);
     ADBannerView* _bannerView;
     UIView* _contentView;
     BOOL _isVisible;
+    BOOL _onBottom;
 }
 
 @property (nonatomic, retain) ADBannerView* bannerView;
 @property (nonatomic, retain) UIView* contentView;
 @property (nonatomic) BOOL visible;
+@property (nonatomic) BOOL onBottom;
 
+-(void)moveToTop;
+-(void)moveToBottom;
 -(void)showAd;
 -(void)hideAd;
 -(void)fixupAdView:(UIInterfaceOrientation)toDeviceOrientation;
@@ -83,6 +87,21 @@ extern "C" void sendEvent(char* event);
 @synthesize bannerView = _bannerView;
 @synthesize contentView = _contentView;
 @synthesize visible = _isVisible;
+@synthesize onBottom = _onBottom;
+
+-(void)moveToTop
+{
+	NSLog(@"Move Ad to Top");
+	_onBottom = false;	
+   	[self fixupAdView:[UIApplication sharedApplication].statusBarOrientation];
+}
+
+-(void)moveToBottom
+{
+	NSLog(@"Move Ad to Bottom");
+	_onBottom = true;	
+   	[self fixupAdView:[UIApplication sharedApplication].statusBarOrientation];
+}
 
 -(void)showAd
 {
@@ -194,12 +213,29 @@ extern "C" void sendEvent(char* event);
 				{
 					NSLog(@"UIInterfaceOrientationPortrait");
 
-					[_bannerView setCenter:CGPointMake(screenSize.width/2, screenSize.height - bannerHeight/2)];
+					if(_onBottom)
+					{
+						[_bannerView setCenter:CGPointMake(screenSize.width/2, screenSize.height - bannerHeight/2)];
+					}
+					
+					else
+					{
+						[_bannerView setCenter:CGPointMake(screenSize.width/2, bannerHeight/2)];
+					}
 					
 					if([_bannerView isHidden])
 					{
 						NSLog(@"Hidden");
-						[_bannerView setCenter:CGPointMake(screenSize.width/2, screenSize.height + bannerHeight/2)];
+						
+						if(_onBottom)
+						{
+							[_bannerView setCenter:CGPointMake(screenSize.width/2, screenSize.height + bannerHeight/2)];
+						}
+						
+						else
+						{
+							[_bannerView setCenter:CGPointMake(screenSize.width/2, -bannerHeight/2)];
+						}
 					}
 				}
 				
@@ -209,12 +245,30 @@ extern "C" void sendEvent(char* event);
 				{
 					NSLog(@"UIInterfaceOrientationPortraitUpsideDown");
 					[(UIView*)_bannerView setTransform:CGAffineTransformMakeRotation(M_PI)];
-					[_bannerView setCenter:CGPointMake(screenSize.width/2, bannerHeight/2)];
+					
+					if(_onBottom)
+					{
+						[_bannerView setCenter:CGPointMake(screenSize.width/2, bannerHeight/2)];
+					}
+					
+					else
+					{
+						[_bannerView setCenter:CGPointMake(screenSize.width/2, screenSize.height - bannerHeight/2)];
+					}
 					
 					if([_bannerView isHidden])
 					{
 						NSLog(@"Hidden");
-						[_bannerView setCenter:CGPointMake(screenSize.width/2, -bannerHeight/2)];
+						
+						if(_onBottom)
+						{
+							[_bannerView setCenter:CGPointMake(screenSize.width/2, -bannerHeight/2)];
+						}
+						
+						else
+						{
+							[_bannerView setCenter:CGPointMake(screenSize.width/2, screenSize.height + bannerHeight/2)];
+						}
 					}
 				}
 				
@@ -224,12 +278,30 @@ extern "C" void sendEvent(char* event);
 				{
 					NSLog(@"UIInterfaceOrientationLandscapeRight");
 					[(UIView*)_bannerView setTransform:CGAffineTransformMakeRotation(M_PI/2)];
-					[_bannerView setCenter:CGPointMake(bannerWidth/2, screenSize.height/2)];
+					
+					if(_onBottom)
+					{
+						[_bannerView setCenter:CGPointMake(bannerWidth/2, screenSize.height/2)];
+					}
+					
+					else
+					{
+						[_bannerView setCenter:CGPointMake(screenSize.width - bannerWidth/2, screenSize.height/2)];
+					}
 					
 					if([_bannerView isHidden])
 					{
 						NSLog(@"Hidden");
-						[_bannerView setCenter:CGPointMake(-bannerHeight/2, screenSize.height/2)];
+						
+						if(_onBottom)
+						{					
+							[_bannerView setCenter:CGPointMake(-bannerHeight/2, screenSize.height/2)];
+						}
+						
+						else
+						{
+							[_bannerView setCenter:CGPointMake(screenSize.width + bannerWidth/2, screenSize.height/2)];
+						}
 					}
 				}
 				
@@ -239,14 +311,31 @@ extern "C" void sendEvent(char* event);
 				{
 					NSLog(@"UIInterfaceOrientationLandscapeLeft");
 					[(UIView*)_bannerView setTransform:CGAffineTransformMakeRotation(-M_PI/2)];
-					[_bannerView setCenter:CGPointMake(screenSize.width - bannerWidth/2, screenSize.height/2)];
+					
+					if(_onBottom)
+					{
+						[_bannerView setCenter:CGPointMake(screenSize.width - bannerWidth/2, screenSize.height/2)];
+					}
+					
+					else
+					{
+						[_bannerView setCenter:CGPointMake(bannerWidth/2, screenSize.height/2)];
+					}
 					
 					if([_bannerView isHidden])
 					{
 						NSLog(@"Hidden");
-						[_bannerView setCenter:CGPointMake(screenSize.width + bannerWidth/2, screenSize.height/2)];
+						
+						if(_onBottom)
+						{
+							[_bannerView setCenter:CGPointMake(screenSize.width + bannerWidth/2, screenSize.height/2)];
+						}
+						
+						else
+						{
+							[_bannerView setCenter:CGPointMake(-bannerHeight/2, screenSize.height/2)];
+						}
 					}
-	
 				}
 				
 				break;
@@ -302,7 +391,7 @@ namespace ads
 		{
 			AdController* c = [[AdController alloc] init];
             adController = c;
-            
+
 			ADBannerView* _adBannerView = [[[classAdBannerView alloc] initWithFrame:CGRectZero] autorelease];
 			c.bannerView = _adBannerView;
 			
@@ -341,6 +430,16 @@ namespace ads
         if(adController == NULL)
         {
             init();
+        }
+        
+        if(position == 0)
+        {
+        	[adController moveToBottom];
+        }
+        
+        else
+        {
+        	[adController moveToTop];
         }
         
         [adController showAd];
