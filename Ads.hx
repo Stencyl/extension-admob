@@ -111,7 +111,7 @@ class Ads
 		}
 
 		var args = new Array<Dynamic>();
-		args.push(position);
+		args.push(onBottom ? 0 : 1);
 		_show_func(args);
 		#end
 	}	
