@@ -418,7 +418,11 @@ namespace ads
 			
 			GlassPaneViewController* vc = [[GlassPaneViewController alloc] init];
             c.contentView = vc.view;
-			[window addSubview:vc.view];
+            
+            //iOS 6
+            [window addSubview:vc.view];
+            [vc.view setAutoresizingMask:UIViewAutoresizingFlexibleWidth];
+            
             [vc.view addSubview:_adBannerView];        
 		}
 
