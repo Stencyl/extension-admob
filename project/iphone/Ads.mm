@@ -64,7 +64,8 @@ extern "C" void sendEvent(char* event);
 {
     ADBannerView* _bannerView;
     UIView* _contentView;
-    BOOL _isVisible;
+    BOOL _isVisible; //user set
+    BOOL _isLoaded; //iOS set
     BOOL _onBottom;
 }
 
@@ -105,14 +106,14 @@ extern "C" void sendEvent(char* event);
 
 -(void)showAd
 {
-	NSLog(@"Set Ad to Visible");
+	NSLog(@"Developer Set Ad to Visible");
 	_isVisible = true;	
    	[self fixupAdView:[UIApplication sharedApplication].statusBarOrientation];
 }
 
 -(void)hideAd
 {
-	NSLog(@"Set Ad to Hidden");
+	NSLog(@"Developer Set Ad to Hidden");
 	_isVisible = false;
 	[self fixupAdView:[UIApplication sharedApplication].statusBarOrientation];
 }
@@ -122,7 +123,9 @@ extern "C" void sendEvent(char* event);
 	NSLog(@"User opened ad.");
 	sendEvent("open");
 	
-	[self hideAd];
+	_isLoaded = false;
+	[self fixupAdView:[UIApplication sharedApplication].statusBarOrientation];
+	//[self hideAd];
 }
 
 - (void)bannerViewActionDidFinish:(ADBannerView*)banner
@@ -130,29 +133,39 @@ extern "C" void sendEvent(char* event);
 	NSLog(@"User closed ad.");
 	sendEvent("close");
 	
-	[self showAd];
+	_isLoaded = true;
+	[self fixupAdView:[UIApplication sharedApplication].statusBarOrientation];
+	//[self showAd];
 }
 
 - (void)bannerViewDidLoadAd:(ADBannerView*)banner
 {
-    NSLog(@"Loaded ad. Show it.");
+    NSLog(@"Loaded ad. Show it (if Developer set to visible).");
     sendEvent("load");
     
-    if(!_isVisible)
+    _isLoaded = true;
+    
+    /*if(!_isVisible)
     {
     	[self showAd];
-    }
+    }*/
+    
+    [self fixupAdView:[UIApplication sharedApplication].statusBarOrientation];
 }
 
 - (void)bannerView:(ADBannerView*)banner didFailToReceiveAdWithError:(NSError*)error
 {
-    NSLog(@"Could not load ad. Hide it.");
+    NSLog(@"Could not load ad. Hide it for now.");
     sendEvent("fail");
+    
+    _isLoaded = false;
    
-    if(_isVisible)
+    /*if(_isVisible)
     {
    		[self hideAd];
-   	}
+   	}*/
+   	
+   	[self fixupAdView:[UIApplication sharedApplication].statusBarOrientation];
 }
 
 - (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation 
@@ -186,7 +199,7 @@ extern "C" void sendEvent(char* event);
         
         //[UIView beginAnimations:@"fixupViews" context:nil];
         
-        if(_isVisible) 
+        if(_isVisible &&_isLoaded) 
         {
         	CGSize screenSize = [[UIScreen mainScreen] bounds].size;
         	CGSize adBannerViewSize = [_bannerView frame].size;
@@ -194,13 +207,19 @@ extern "C" void sendEvent(char* event);
         	float bannerWidth = adBannerViewSize.width;
         	float bannerHeight = adBannerViewSize.height;
 
+			#if defined(__IPHONE_6_0) && __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_6_0
+			#else
+			NSLog(@"Flip Banner Dimensions on lower versions of iOS");
+			
 			//Early on, the banner size can be flipped. This protects against that.
 			if(bannerWidth > bannerHeight && UIInterfaceOrientationIsLandscape(toDeviceOrientation))
 			{
 				bannerWidth = adBannerViewSize.height;
         	 	bannerHeight = adBannerViewSize.width;
 			}
+			#endif
 
+			//NSLog(@"Banner Size: %f %f", bannerWidth, bannerHeight);
 			[(UIView*)_bannerView setTransform:CGAffineTransformIdentity];
 			[_bannerView setFrame:CGRectMake(0.f, 0.f, bannerWidth, bannerHeight)];
 	
@@ -281,12 +300,20 @@ extern "C" void sendEvent(char* event);
 					
 					if(_onBottom)
 					{
+						#if defined(__IPHONE_6_0) && __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_6_0
+						[_bannerView setCenter:CGPointMake(bannerHeight/2, screenSize.height/2)];
+						#else
 						[_bannerView setCenter:CGPointMake(bannerWidth/2, screenSize.height/2)];
+						#endif
 					}
 					
 					else
 					{
+						#if defined(__IPHONE_6_0) && __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_6_0
+						[_bannerView setCenter:CGPointMake(screenSize.width - bannerHeight/2, screenSize.height/2)];
+						#else
 						[_bannerView setCenter:CGPointMake(screenSize.width - bannerWidth/2, screenSize.height/2)];
+						#endif
 					}
 					
 					if([_bannerView isHidden])
@@ -294,8 +321,12 @@ extern "C" void sendEvent(char* event);
 						NSLog(@"Hidden");
 						
 						if(_onBottom)
-						{					
+						{			
+							#if defined(__IPHONE_6_0) && __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_6_0	
 							[_bannerView setCenter:CGPointMake(-bannerHeight/2, screenSize.height/2)];
+							#else	
+							[_bannerView setCenter:CGPointMake(-bannerHeight/2, screenSize.height/2)];
+							#endif
 						}
 						
 						else
@@ -314,12 +345,20 @@ extern "C" void sendEvent(char* event);
 					
 					if(_onBottom)
 					{
+						#if defined(__IPHONE_6_0) && __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_6_0
+						[_bannerView setCenter:CGPointMake(screenSize.width - bannerHeight/2, screenSize.height/2)];
+						#else
 						[_bannerView setCenter:CGPointMake(screenSize.width - bannerWidth/2, screenSize.height/2)];
+						#endif
 					}
 					
 					else
 					{
+						#if defined(__IPHONE_6_0) && __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_6_0
+						[_bannerView setCenter:CGPointMake(bannerHeight/2, screenSize.height/2)];
+						#else
 						[_bannerView setCenter:CGPointMake(bannerWidth/2, screenSize.height/2)];
+						#endif
 					}
 					
 					if([_bannerView isHidden])
@@ -328,7 +367,11 @@ extern "C" void sendEvent(char* event);
 						
 						if(_onBottom)
 						{
+							#if defined(__IPHONE_6_0) && __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_6_0
+							[_bannerView setCenter:CGPointMake(screenSize.width + bannerHeight/2, screenSize.height/2)];
+							#else
 							[_bannerView setCenter:CGPointMake(screenSize.width + bannerWidth/2, screenSize.height/2)];
+							#endif
 						}
 						
 						else
@@ -352,7 +395,7 @@ extern "C" void sendEvent(char* event);
             CGRect adBannerViewFrame = [_bannerView frame];
             adBannerViewFrame.origin.x = 0;
             adBannerViewFrame.origin.y = -9999;
-            [_bannerView setFrame:adBannerViewFrame];         
+            [_bannerView setFrame:adBannerViewFrame];
         }
         
         //[UIView commitAnimations];
@@ -395,7 +438,22 @@ namespace ads
 			ADBannerView* _adBannerView = [[[classAdBannerView alloc] initWithFrame:CGRectZero] autorelease];
 			c.bannerView = _adBannerView;
 			
-			[_adBannerView setRequiredContentSizeIdentifiers:[NSSet setWithObjects: ADBannerContentSizeIdentifierPortrait, ADBannerContentSizeIdentifierLandscape, nil]];
+			#if defined(__IPHONE_6_0) && __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_6_0
+			if(UIDeviceOrientationIsLandscape([UIDevice currentDevice].orientation)) 
+			{
+				[_adBannerView setRequiredContentSizeIdentifiers:[NSSet setWithObjects: ADBannerContentSizeIdentifierLandscape, ADBannerContentSizeIdentifierPortrait, nil]];
+			}
+			
+			else
+			{
+				[_adBannerView setRequiredContentSizeIdentifiers:[NSSet setWithObjects: ADBannerContentSizeIdentifierPortrait, nil]];
+			}
+			
+			#else
+			[_adBannerView setRequiredContentSizeIdentifiers:[NSSet setWithObjects: ADBannerContentSizeIdentifierLandscape, ADBannerContentSizeIdentifierPortrait, nil]];
+			#endif
+			
+			//[_adBannerView setAutoresizingMask:UIViewAutoresizingFlexibleWidth];
 			
 			int bannerHeight = 0;
 			
@@ -421,9 +479,8 @@ namespace ads
             
             //iOS 6
             [window addSubview:vc.view];
-            [vc.view setAutoresizingMask:UIViewAutoresizingFlexibleWidth];
             
-            [vc.view addSubview:_adBannerView];        
+            [vc.view addSubview:_adBannerView];     
 		}
 
 		[pool drain];
