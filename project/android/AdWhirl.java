@@ -23,92 +23,106 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
-import android.widget.FrameLayout;
 import android.widget.LinearLayout;
-import android.widget.RelativeLayout;
 
-import com.adwhirl.AdWhirlManager;
-import com.adwhirl.AdWhirlLayout;
-import com.adwhirl.AdWhirlTargeting;
+
+import android.view.Gravity;
+import com.google.ads.AdRequest;
+import com.google.ads.AdSize;
+import com.google.ads.AdView;
 
 import dalvik.system.DexClassLoader;
 
-public class AdWhirl
+public class AdWhirl extends GameActivity
 {
-	public static RelativeLayout adLayout;
+	public static LinearLayout layout;
 	public static GameActivity activity;
-	public static String code;
 
-	public static void init(String code)
+	static AdView adView;
+
+	static public void initAdmob(final String code, final int position)
 	{
-		AdWhirl.code = code;
 		activity = GameActivity.getInstance();
- 
-        activity.runOnUiThread(new Runnable() 
-		{
-			public void run() 
-			{
-				adLayout = new RelativeLayout(activity);
-				
-				//Nothing works till this is set.
-				AdWhirlManager.setConfigExpireTimeout(1000 * 60 * 5);
-			
-				RelativeLayout.LayoutParams p = new RelativeLayout.LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT); 
-				ViewGroup view = (ViewGroup) activity.getWindow().getDecorView();
-				ViewGroup content = (ViewGroup) view.getChildAt(0);
-				content.addView(adLayout, p);
-			}
-		});
-	}
-	
-	public static void showAd(final int position)
-	{
-		if(activity == null)
-		{
-			return;
-		}
-	
+
 		activity.runOnUiThread(new Runnable() 
 		{
-			public void run() 
+        	public void run() 
 			{
-				AdWhirlLayout l = new AdWhirlLayout(activity, code);
-				l.setMaxHeight(75); //AdMob asks for this minimum height
+				adView = new AdView(activity, AdSize.BANNER, code);
+
+				LinearLayout layout = new LinearLayout(activity);
+				layout.setGravity(Gravity.CENTER_HORIZONTAL);
 				
-				RelativeLayout.LayoutParams p = new RelativeLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT); 
-				
-				//Bottom-Center
 				if(position == 0)
 				{
-					p.addRule(RelativeLayout.CENTER_HORIZONTAL);
-					p.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+					layout.setGravity(Gravity.CENTER_HORIZONTAL|Gravity.BOTTOM);
 				}
 				
-				//Top-Center
+				else if(position == 1)
+				{
+					layout.setGravity(Gravity.BOTTOM|Gravity.LEFT);
+				}
+				
+				else if(position == 2)
+				{
+					layout.setGravity(Gravity.BOTTOM|Gravity.RIGHT);
+				}
+				
+				else if(position == 3)
+				{
+					layout.setGravity(Gravity.CENTER_HORIZONTAL);
+				}
+				
+				else if(position == 4)
+				{
+					layout.setGravity(Gravity.LEFT);
+				}
+				
 				else
 				{
-					p.addRule(RelativeLayout.CENTER_HORIZONTAL);
-					p.addRule(RelativeLayout.ALIGN_PARENT_TOP);
+					layout.setGravity(Gravity.RIGHT);
 				}
 				
-				adLayout.addView(l, p);
-			}
-		});
+				layout.addView(adView);
+				activity.addContentView(layout, new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT));
+
+    			AdRequest adRequest = new AdRequest();
+				//adRequest.setTesting(true);
+    			adView.loadAd(adRequest);
+            }
+        });
 	}
-	
-	public static void hideAd()
+
+	static public void showAd()
 	{
-		if(activity == null)
-		{
-			return;
-		}
+		activity = GameActivity.getInstance();
 		
-		activity.runOnUiThread(new Runnable() 
-		{
-			public void run() 
+        activity.runOnUiThread(new Runnable() 
+        {
+        	public void run() 
 			{
-				adLayout.removeAllViews();
-			}
-		});
+				if(adView.getVisibility() == AdView.GONE)
+				{
+     				adView.setVisibility(AdView.VISIBLE);
+				}
+            }
+        });
+    }
+
+	static public void hideAd()
+	{
+		activity = GameActivity.getInstance();
+		
+        activity.runOnUiThread(new Runnable() 
+        {
+        	public void run() 
+        	{
+				if(adView.getVisibility() == AdView.VISIBLE)
+				{
+     				adView.setVisibility(AdView.GONE);
+				}
+            }
+        });
 	}
+
 }

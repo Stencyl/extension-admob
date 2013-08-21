@@ -12,6 +12,7 @@ import nme.Lib;
 import nme.JNI;
 #end
 
+import scripts.MyAssets;
 import com.stencyl.Engine;
 import com.stencyl.event.EventMaster;
 import com.stencyl.event.StencylEvent;
@@ -64,7 +65,7 @@ class Ads
 		#end
 	}
 
-	public static function initialize(apiCode:String = "none"):Void 
+	public static function initialize(apiCode:String = "none", position:Int = 0):Void 
 	{
 		#if(mobile && !android && !air)
 		if(!initialized)
@@ -81,11 +82,12 @@ class Ads
 		
 			if(_init_func == null)
 			{
-				_init_func = JNI.createStaticMethod(ANDROID_CLASS, "init", "(Ljava/lang/String;)V", true);
+				_init_func = JNI.createStaticMethod(ANDROID_CLASS, "initAdmob", "(Ljava/lang/String;I)V", true);
 			}
 	
 			var args = new Array<Dynamic>();
 			args.push(adwhirlCode);
+			args.push(position);
 			_init_func(args);
 			
 			initialized = true;
@@ -102,16 +104,15 @@ class Ads
 		#if android
 		if(!initialized)
 		{
-			Ads.initialize();
+			Ads.initialize(MyAssets.whirlID, MyAssets.adPositionBottom ? 0 : 3);
 		}
 		
 		if(_show_func == null)
 		{
-			_show_func = JNI.createStaticMethod(ANDROID_CLASS, "showAd", "(I)V", true);
+			_show_func = JNI.createStaticMethod(ANDROID_CLASS, "showAd", "()V", true);
 		}
 
 		var args = new Array<Dynamic>();
-		args.push(onBottom ? 0 : 1);
 		_show_func(args);
 		#end
 	}	
@@ -125,7 +126,7 @@ class Ads
 		#if android
 		if(!initialized)
 		{
-			Ads.initialize();
+			Ads.initialize(MyAssets.whirlID, MyAssets.adPositionBottom ? 0 : 3);
 		}
 		
 		if(_hide_func == null)
