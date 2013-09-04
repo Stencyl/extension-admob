@@ -103,6 +103,7 @@ extern "C" void sendEvent(char* event);
     sendEvent("load");
     
     _isLoaded = true;
+    _bannerView.hidden = NO;  
     
     [self fixupAdView:[UIApplication sharedApplication].statusBarOrientation];
 }
@@ -110,6 +111,7 @@ extern "C" void sendEvent(char* event);
 - (void)bannerView:(ADBannerView*)banner didFailToReceiveAdWithError:(NSError*)error
 {
     NSLog(@"Could not load ad. Hide it for now.");
+    NSLog(@"%@", [error localizedDescription]);
     sendEvent("fail");
     
     _isLoaded = false;
@@ -225,6 +227,7 @@ extern "C" void sendEvent(char* event);
         if (_isVisible && ![_bannerView isHidden] && _isLoaded)
         {
             NSLog(@"fixupAdView - Ad is Visible");
+            
             CGRect adBannerViewFrame = [_bannerView frame];
             adBannerViewFrame.origin.x = 0;
             if(_onBottom)
@@ -292,9 +295,9 @@ namespace ads
                 NSLog(@"Initializing ad banner content to portrait...");
                 [_adBannerView setRequiredContentSizeIdentifiers:[NSSet setWithObjects: ADBannerContentSizeIdentifierPortrait, nil]];
             }
-            //  Hide it off in outer-space for now....
- 			[_adBannerView setFrame:CGRectOffset([_adBannerView frame], 0, -9999)];
-
+            
+            
+            
 			AdController* ac = [[AdController alloc] init];
             ac.processRotations = YES;
             
@@ -306,8 +309,12 @@ namespace ads
             ac.contentView = window.rootViewController.view;
             // for the ads to behave properly they need to be owned by the RootViewControler that
             // is also controlling the UISTageView
+            _adBannerView.hidden = YES; // It will be unhidden at first load
             [window.rootViewController.view addSubview:ac.bannerView];
-		}
+ 			[ac fixupAdView:currentDeviceOrientation];
+            
+            
+        }
 
 		[pool drain];
     }
@@ -351,4 +358,3 @@ namespace ads
 }
 
 @end
-
