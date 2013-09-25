@@ -67,31 +67,35 @@ class Ads
 
 	public static function initialize(apiCode:String = "none", position:Int = 0):Void 
 	{
-		#if(mobile && !android && !air)
-		if(!initialized)
+		if (initialized)
 		{
-			set_event_handle(notifyListeners);
-			initialized = true;
+			return;
 		}
+		
+		#if(mobile && !android && !air)
+		set_event_handle(notifyListeners);
+		initialized = true;
 		#end	
 		
 		#if android
-		if(!initialized)
+		if (apiCode == "none" || apiCode == "")
 		{
-			adwhirlCode = apiCode;
-		
-			if(_init_func == null)
-			{
-				_init_func = JNI.createStaticMethod(ANDROID_CLASS, "initAdmob", "(Ljava/lang/String;I)V", true);
-			}
-	
-			var args = new Array<Dynamic>();
-			args.push(adwhirlCode);
-			args.push(position);
-			_init_func(args);
-			
-			initialized = true;
+			return;
 		}
+		
+		adwhirlCode = apiCode;
+		
+		if(_init_func == null)
+		{
+			_init_func = JNI.createStaticMethod(ANDROID_CLASS, "initAdmob", "(Ljava/lang/String;I)V", true);
+		}
+	
+		var args = new Array<Dynamic>();
+		args.push(adwhirlCode);
+		args.push(position);
+		_init_func(args);
+			
+		initialized = true;
 		#end
 	}
 
