@@ -67,7 +67,7 @@ class Ads
 
 	public static function initialize(apiCode:String = "none", position:Int = 0):Void 
 	{
-		if (initialized)
+		if(initialized)
 		{
 			return;
 		}
@@ -78,7 +78,7 @@ class Ads
 		#end	
 		
 		#if android
-		if (apiCode == "none" || apiCode == "")
+		if(apiCode == "none" || apiCode == "")
 		{
 			return;
 		}
