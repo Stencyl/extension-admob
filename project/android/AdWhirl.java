@@ -15,8 +15,6 @@ import android.media.MediaPlayer;
 import android.media.SoundPool;
 import android.net.Uri;
 import android.os.Bundle;
-import android.util.DisplayMetrics;
-import android.util.Log;
 import android.view.ViewGroup;
 import android.view.ViewGroup.LayoutParams;
 import android.view.Window;
@@ -27,9 +25,7 @@ import android.widget.LinearLayout;
 
 
 import android.view.Gravity;
-import com.google.ads.AdRequest;
-import com.google.ads.AdSize;
-import com.google.ads.AdView;
+import com.google.ads.*;
 
 import dalvik.system.DexClassLoader;
 
@@ -39,8 +35,14 @@ public class AdWhirl extends GameActivity
 	public static GameActivity activity;
 
 	static AdView adView;
+    static InterstitialAd interstitial;
+    
+    static public void initAdmob(final String code, final int position)
+    {
+    	AdWhirl.initBanner(code, position, 0);
+    }
 
-	static public void initAdmob(final String code, final int position)
+	static public void initBanner(final String code, final int position, final int smartBanner)
 	{
 		activity = GameActivity.getInstance();
 
@@ -48,52 +50,37 @@ public class AdWhirl extends GameActivity
 		{
         	public void run() 
 			{
-				adView = new AdView(activity, AdSize.BANNER, code);
-
 				LinearLayout layout = new LinearLayout(activity);
 				layout.setGravity(Gravity.CENTER_HORIZONTAL);
+                
+                if (smartBanner == 0)
+                {
+                    adView = new AdView(activity, AdSize.BANNER, code);
+                }
+                else
+                {
+                    adView = new AdView(activity, AdSize.SMART_BANNER, code);
+                }
 				
 				if(position == 0)
 				{
 					layout.setGravity(Gravity.CENTER_HORIZONTAL|Gravity.BOTTOM);
 				}
-				
-				else if(position == 1)
-				{
-					layout.setGravity(Gravity.BOTTOM|Gravity.LEFT);
-				}
-				
-				else if(position == 2)
-				{
-					layout.setGravity(Gravity.BOTTOM|Gravity.RIGHT);
-				}
-				
-				else if(position == 3)
+                else
 				{
 					layout.setGravity(Gravity.CENTER_HORIZONTAL);
-				}
-				
-				else if(position == 4)
-				{
-					layout.setGravity(Gravity.LEFT);
-				}
-				
-				else
-				{
-					layout.setGravity(Gravity.RIGHT);
-				}
+                }
 				
 				layout.addView(adView);
 				activity.addContentView(layout, new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT));
 
     			AdRequest adRequest = new AdRequest();
-				//adRequest.setTesting(true);
     			adView.loadAd(adRequest);
             }
         });
 	}
 
-	static public void showAd()
+	static public void showBanner()
 	{
 		activity = GameActivity.getInstance();
 		
@@ -109,7 +96,7 @@ public class AdWhirl extends GameActivity
         });
     }
 
-	static public void hideAd()
+	static public void hideBanner()
 	{
 		activity = GameActivity.getInstance();
 		
@@ -124,5 +111,44 @@ public class AdWhirl extends GameActivity
             }
         });
 	}
-
+    
+    static public void initInterstitial(final String code)
+    {
+        activity = GameActivity.getInstance();
+		
+        activity.runOnUiThread(new Runnable()
+        {
+        	public void run()
+        	{
+				interstitial = new InterstitialAd(activity, code);
+            }
+        });
+    }
+    
+    static public void loadInterstitial()
+    {
+        activity = GameActivity.getInstance();
+		
+        activity.runOnUiThread(new Runnable()
+                               {
+        	public void run()
+        	{
+				AdRequest adRequest = new AdRequest();
+                interstitial.loadAd(adRequest);
+            }
+        });
+    }
+    
+    static public void showInterstitial()
+    {
+        activity = GameActivity.getInstance();
+		
+        activity.runOnUiThread(new Runnable()
+                               {
+        	public void run()
+        	{
+				interstitial.show();
+            }
+        });
+    }
 }

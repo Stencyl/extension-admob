@@ -33,7 +33,7 @@ class Ads
 	private static var _show_func:Dynamic;
 	private static var _hide_func:Dynamic;
 	
-	//Ad Events only happen on iOS. AdWhirl provides no out-of-the-box way.
+	//Ad Events only happen on iOS. AdMob provides no out-of-the-box way.
 	private static function notifyListeners(inEvent:Dynamic)
 	{
 		#if(mobile && !android && !air)
@@ -113,7 +113,7 @@ class Ads
 		
 		if(_show_func == null)
 		{
-			_show_func = JNI.createStaticMethod(ANDROID_CLASS, "showAd", "()V", true);
+			_show_func = JNI.createStaticMethod(ANDROID_CLASS, "showBanner", "()V", true);
 		}
 
 		var args = new Array<Dynamic>();
@@ -135,7 +135,7 @@ class Ads
 		
 		if(_hide_func == null)
 		{
-			_hide_func = JNI.createStaticMethod(ANDROID_CLASS, "hideAd", "()V", true);
+			_hide_func = JNI.createStaticMethod(ANDROID_CLASS, "hideBanner", "()V", true);
 		}
 
 		var args = new Array<Dynamic>();
