@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<project>
-	<classpath name="." />
-	<ndll name="ads" if="ios"/>
-	<dependency name="iAd.framework" if="ios" />
-	<java path="project/android" />
-	<template path="template/android/libs/GoogleAdMobAdsSdk-6.4.1.jar" rename="libs/GoogleAdMobAdsSdk-6.4.1.jar" if="android"/>
-</project>
