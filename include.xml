@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<project>
+    
+    <section if="ios">
+    
+        <ndll name="ads" if="ios"/>
+        <dependency name="iAd.framework" if="ios" />
+        
+    </section>
+    
+    <section if="android">
+        
+        <classpath name="src" />
+        <dependency name="myadmob" path="dependencies/myadmob" if="android" />
+        <android extension="com.stencyl.Ads.AdMob" />
+        
+        <!--<java path="project/android" />-->
+        
+    </section>
+    
+</project>
