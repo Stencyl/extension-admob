@@ -5,7 +5,7 @@ import cpp.Lib;
 #elseif neko
 import neko.Lib;
 #else
-import nme.Lib;
+import openfl.Lib;
 #end
 
 #if android
@@ -17,9 +17,9 @@ import com.stencyl.Engine;
 import com.stencyl.event.EventMaster;
 import com.stencyl.event.StencylEvent;
 
-import nme.utils.ByteArray;
-import nme.display.BitmapData;
-import nme.geom.Rectangle;
+import openfl.utils.ByteArray;
+import openfl.display.BitmapData;
+import openfl.geom.Rectangle;
 
 class Ads 
 {	
@@ -146,8 +146,8 @@ class Ads
 	}
 	
 	#if(mobile && !android && !air)
-	private static var set_event_handle = nme.Loader.load("ads_set_event_handle", 1);
-	private static var ads_showad = nme.Loader.load("ads_showad", 1);
-	private static var ads_hidead = nme.Loader.load("ads_hidead", 0);
+	private static var set_event_handle = Lib.load("ads", "ads_set_event_handle", 1);
+	private static var ads_showad = Lib.load("ads", "ads_showad", 1);
+	private static var ads_hidead = Lib.load("ads", "ads_hidead", 0);
 	#end
 }
