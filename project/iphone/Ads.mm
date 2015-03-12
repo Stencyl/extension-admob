@@ -194,13 +194,7 @@ extern "C" void sendEvent(char* event);
 {
 	CGSize correctSize;
 	UIInterfaceOrientation toOrientation = [UIApplication sharedApplication].statusBarOrientation;
-	correctSize = [[UIScreen mainScreen] bounds].size;
-	if(UIInterfaceOrientationIsLandscape(toOrientation))
-	{
-		correctSize.height = [[UIScreen mainScreen] bounds].size.width;
-		correctSize.width = [[UIScreen mainScreen] bounds].size.height;
-	}
-	
+	correctSize = [[UIScreen mainScreen] bounds].size;	
 	return correctSize;
 }
 
@@ -210,12 +204,15 @@ extern "C" void sendEvent(char* event);
 //      game view over instead of overlay (some of the game view would spill off screen).
 //      Maybe eventuallly that could exposed as a user selection and used here like IsHidden.
 - (void)fixupAdView:(UIInterfaceOrientation)toInterfaceOrientation {
-    if (_bannerView != nil)
+    if(_bannerView != nil)
     {
-        if (UIInterfaceOrientationIsLandscape(toInterfaceOrientation))
+        if(UIInterfaceOrientationIsLandscape(toInterfaceOrientation))
         {
             [_bannerView setCurrentContentSizeIdentifier:ADBannerContentSizeIdentifierLandscape];
-        } else {
+        } 
+        
+        else 
+        {
             [_bannerView setCurrentContentSizeIdentifier:ADBannerContentSizeIdentifierPortrait];
         }
         
@@ -227,14 +224,17 @@ extern "C" void sendEvent(char* event);
             NSLog(@"fixupAdView - Ad is Visible");
             CGRect adBannerViewFrame = [_bannerView frame];
             adBannerViewFrame.origin.x = 0;
+            
             if(_onBottom)
             {
                 adBannerViewFrame.origin.y = screenSize.height - bannerHeight;
             }
+            
             else
             {
                 adBannerViewFrame.origin.y = 0;
             }
+            
             [_bannerView setFrame:adBannerViewFrame];
 
         }
@@ -243,14 +243,17 @@ extern "C" void sendEvent(char* event);
             NSLog(@"fixupAdView - Ad is not Visible or Hidden or not Loaded");
             CGRect adBannerViewFrame = [_bannerView frame];
             adBannerViewFrame.origin.x = 0;
+            
             if(_onBottom)
             {
                 adBannerViewFrame.origin.y = screenSize.height + bannerHeight;
             }
+            
             else
             {
                 adBannerViewFrame.origin.y = -bannerHeight;
             }
+            
             [_bannerView setFrame:adBannerViewFrame];
          }
         [UIView commitAnimations];

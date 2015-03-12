@@ -104,7 +104,7 @@ class Ads
 	public static function showAd(onBottom:Bool = true):Void
 	{
 		#if(mobile && !android && !air)
-		ads_showad(MyAssets.adPositionBottom);
+		ads_showad(MyAssets.adPositionBottom ? 0 : 1);
 		#end
 		
 		#if android
