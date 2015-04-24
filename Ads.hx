@@ -25,16 +25,7 @@ class Ads
 {	
 	//Universal
 	private static var initialized:Bool = false;
-	
-	//Android-Only
-    #if android
-	public static var adwhirlCode:String = "none";
-	private static inline var ANDROID_CLASS:String = "com/stencyl/Ads/Admob";
-	private static var _init_func:Dynamic;
-	private static var _show_func:Dynamic;
-	private static var _hide_func:Dynamic;
-    #end
-	
+			
 	//Ad Events only happen on iOS. AdMob provides no out-of-the-box way.
 	private static function notifyListeners(inEvent:Dynamic)
 	{
@@ -77,28 +68,7 @@ class Ads
 		#if(mobile && !android && !air)
 		set_event_handle(notifyListeners);
 		initialized = true;
-		#end	
-		
-		#if android
-		if(apiCode == "none" || apiCode == "")
-		{
-			return;
-		}
-		
-		adwhirlCode = apiCode;
-		
-		if(_init_func == null)
-		{
-			_init_func = JNI.createStaticMethod("com/stencyl/Ads/AdMob", "initBanner", "(Ljava/lang/String;I)V", true);
-		}
-	
-		var args = new Array<Dynamic>();
-		args.push(adwhirlCode);
-		args.push(MyAssets.adPositionBottom ? 0 : 1);
-		_init_func(args);
-			
-		initialized = true;
-		#end
+		#end				
 	}
 
 	public static function showAd(onBottom:Bool = true):Void
@@ -106,42 +76,12 @@ class Ads
 		#if(mobile && !android && !air)
 		ads_showad(MyAssets.adPositionBottom ? 0 : 1);
 		#end
-		
-		#if android
-		if(!initialized)
-		{
-			Ads.initialize(MyAssets.whirlID, MyAssets.adPositionBottom ? 0 : 1);
-		}
-		
-		if(_show_func == null)
-		{
-			_show_func = JNI.createStaticMethod("com/stencyl/Ads/AdMob", "showBanner", "()V", true);
-		}
-
-		var args = new Array<Dynamic>();
-		_show_func(args);
-		#end
 	}	
 	
 	public static function hideAd():Void
 	{
 		#if(mobile && !android && !air)
 		ads_hidead();
-		#end
-		
-		#if android
-		if(!initialized)
-		{
-			Ads.initialize(MyAssets.whirlID, MyAssets.adPositionBottom ? 0 : 1);
-		}
-		
-		if(_hide_func == null)
-		{
-			_hide_func = JNI.createStaticMethod("com/stencyl/Ads/AdMob", "hideBanner", "()V", true);
-		}
-
-		var args = new Array<Dynamic>();
-		_hide_func(args);
 		#end
 	}
 	

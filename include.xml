@@ -8,14 +8,4 @@
         
     </section>
     
-    <section if="android">
-        
-        <classpath name="src" />
-        <dependency name="myadmob" path="dependencies/myadmob" if="android" />
-        <android extension="com.stencyl.Ads.AdMob" />
-        
-        <!--<java path="project/android" />-->
-        
-    </section>
-    
 </project>
