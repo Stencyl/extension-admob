@@ -3,98 +3,44 @@
 #import <CoreFoundation/CoreFoundation.h>
 #import <iAd/iAd.h>
 
-
-
-
-// NOTE:  These classes are using some methods that are deprecated as of IOS 6
-// such as setRequiredContentSizeIdentifiers and setCurrentContentSizeIdentifier.
-// They still work for now and I don't know how they could be worked around.
-// Someday they might have to be addressed, but not today.
-
 extern "C" void sendEvent(char* event);
 
-@interface AdController : UIViewController <ADBannerViewDelegate>
+
+@interface iAdsController:NSObject <ADBannerViewDelegate>
 {
-    ADBannerView* _bannerView;
-    UIView* _contentView;
-    BOOL _isVisible; //user set
-    BOOL _isLoaded; //iOS set
-    BOOL _onBottom;
-    BOOL _processRotations;  // Should I do my stuff?
+    BOOL onBottom;
 }
 
-@property (nonatomic, retain) ADBannerView* bannerView;
-@property (nonatomic, retain) UIView* contentView;
-@property (nonatomic) BOOL visible;
-@property (nonatomic) BOOL onBottom;
-@property (nonatomic) BOOL processRotations;
-
--(void)moveToTop;
--(void)moveToBottom;
--(void)showAd;
--(void)hideAd;
--(void)fixupAdView:(UIInterfaceOrientation)toDeviceOrientation; 
+@property (nonatomic, assign) BOOL onBottom;
 
 @end
 
-@implementation AdController
+@implementation iAdsController
 
-@synthesize bannerView = _bannerView;
-@synthesize contentView = _contentView;
-@synthesize visible = _isVisible;
-@synthesize onBottom = _onBottom;
-@synthesize processRotations = _processRotations;
+@synthesize onBottom;
 
-
--(void)moveToTop
+-(id) init
 {
-	NSLog(@"Move Ad to Top");
-	_onBottom = false;	
-   	[self fixupAdView:[UIApplication sharedApplication].statusBarOrientation];  
+    NSLog(@"AsiAds : iAdsDelegate :: init");
+    self = [super init];
+    return self;
 }
 
--(void)moveToBottom
-{
-	NSLog(@"Move Ad to Bottom");
-	_onBottom = true;	
-   	[self fixupAdView:[UIApplication sharedApplication].statusBarOrientation];
-}
-
--(void)showAd
-{
-	NSLog(@"Developer Set Ad to Visible");
-	_isVisible = true;	
-   	[self fixupAdView:[UIApplication sharedApplication].statusBarOrientation];
-}
-
--(void)hideAd
-{
-	NSLog(@"Developer Set Ad to Hidden");
-	_isVisible = false;
-	[self fixupAdView:[UIApplication sharedApplication].statusBarOrientation];
-}
+#pragma mark iAds delegate methods
 
 - (BOOL)bannerViewActionShouldBegin:(ADBannerView*)banner willLeaveApplication:(BOOL)willLeave
 {
-	NSLog(@"User opened ad.");
-	sendEvent("open");
-
-	_isLoaded = false;
-	[self fixupAdView:[UIApplication sharedApplication].statusBarOrientation];
-
-    _processRotations = NO;
+    NSLog(@"User opened ad.");
+    sendEvent("open");
+    
     return YES;
 }
 
 - (void)bannerViewActionDidFinish:(ADBannerView*)banner
 {
-	NSLog(@"User closed ad.");
-	sendEvent("close");
-	
-	_isLoaded = true;
-	[self fixupAdView:[UIApplication sharedApplication].statusBarOrientation];
+    NSLog(@"User closed ad.");
+    sendEvent("close");
     
-    _processRotations = YES;
 }
 
 - (void)bannerViewDidLoadAd:(ADBannerView*)banner
@@ -102,9 +48,10 @@ extern "C" void sendEvent(char* event);
     NSLog(@"Loaded ad. Show it (if Developer set to visible).");
     sendEvent("load");
     
-    _isLoaded = true;
+    ads::adBanner.hidden = NO;
     
-    [self fixupAdView:[UIApplication sharedApplication].statusBarOrientation];
+    [self show];
+    
 }
 
 - (void)bannerView:(ADBannerView*)banner didFailToReceiveAdWithError:(NSError*)error
@@ -112,246 +59,145 @@ extern "C" void sendEvent(char* event);
     NSLog(@"Could not load ad. Hide it for now.");
     sendEvent("fail");
     
-    _isLoaded = false;
-
-   	[self fixupAdView:[UIApplication sharedApplication].statusBarOrientation];
 }
 
-- (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation 
+- (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation
 {
     NSLog(@"Ad Controller saying YES to auto-rotate.");
     return YES;
 }
 
-- (void)orientationChanged:(NSNotification*)notification
+- (void)show
 {
-    if (_processRotations == NO)
+    CGSize screenRect = [self getCorrectedSize];
+    CGRect frame = ads::adBanner.frame;
+    frame.origin.y = 0;
+    
+    [UIView beginAnimations:nil context:nil];
+    
+    if(onBottom)
     {
-        return;  // Do Nothing!
+        frame.origin.y = screenRect.height - frame.size.height;
+        ads::adBanner.frame=frame;
+    }else
+    {
+        frame.origin.y = 0;
+        ads::adBanner.frame=frame;
     }
     
-	// Doing this here because fixupAdView gets called alot for other than orinetation changes and don't want to thrash the ad content downloads.
-	UIInterfaceOrientation toOrientation = [UIApplication sharedApplication].statusBarOrientation;
-	if(UIInterfaceOrientationIsLandscape(toOrientation)) 
-	{
-		NSLog(@"Changing ad orientation to landscape...");
-		[_bannerView setRequiredContentSizeIdentifiers:[NSSet setWithObjects: ADBannerContentSizeIdentifierLandscape, nil]];
-    } 
-	else 
-	{
-		NSLog(@"Changing ad orientation to portrait...");
-		[_bannerView setRequiredContentSizeIdentifiers:[NSSet setWithObjects: ADBannerContentSizeIdentifierPortrait, nil]];
-    }
-
-	[self fixupAdView:toOrientation];
+    [UIView commitAnimations];
 }
 
-
-- (void)viewWillAppear:(BOOL)animated 
+- (void)hide
 {
-    NSLog(@"Ad View will appear...");
-    [self fixupAdView:[UIApplication sharedApplication].statusBarOrientation];
-}
-
-
-
-
--(int)getBannerHeight:(UIInterfaceOrientation)orientation
-{
-    if(UIInterfaceOrientationIsLandscape(orientation))
-    {
-        if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad)
-        {
-            
-            return 66;
-        }
-        else
-        {
-            return 32;
-        }
-    }
+    CGSize screenRect = [self getCorrectedSize];
+    CGRect frame = ads::adBanner.frame;
+    frame.origin.y = 0;
     
-    else
+    [UIView beginAnimations:nil context:nil];
+    
+    if(onBottom)
     {
-        if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad)
-        {
-            return 66;
-        }
-        else
-        {
-            return 50;
-        }
+        frame.origin.y = screenRect.height + frame.size.height;
+        ads::adBanner.frame=frame;
+    }else
+    {
+        frame.origin.y = -frame.size.height;
+        ads::adBanner.frame=frame;
     }
+
+    
+    [UIView commitAnimations];
 }
-
-
-
 
 
 //  Normal [UIScreen mainScreen] will always report portrait mode.  So check current orientation and
 //  return a properly corrected Size if landscape.
 - (CGSize)getCorrectedSize
 {
-	CGSize correctSize;
-	UIInterfaceOrientation toOrientation = [UIApplication sharedApplication].statusBarOrientation;
-	correctSize = [[UIScreen mainScreen] bounds].size;	
-	return correctSize;
+    CGSize correctSize;
+    UIInterfaceOrientation toOrientation = [UIApplication sharedApplication].statusBarOrientation;
+    correctSize = [[UIScreen mainScreen] bounds].size;
+    return correctSize;
 }
-
-
-//NOTE: This approach simply overlays the ad view on top of the scene.  I think thats the way it
-//      was originally working.  However, it might be possible to place the ad view and SHIFT the
-//      game view over instead of overlay (some of the game view would spill off screen).
-//      Maybe eventuallly that could exposed as a user selection and used here like IsHidden.
-- (void)fixupAdView:(UIInterfaceOrientation)toInterfaceOrientation {
-    if(_bannerView != nil)
-    {
-        if(UIInterfaceOrientationIsLandscape(toInterfaceOrientation))
-        {
-            [_bannerView setCurrentContentSizeIdentifier:ADBannerContentSizeIdentifierLandscape];
-        } 
-        
-        else 
-        {
-            [_bannerView setCurrentContentSizeIdentifier:ADBannerContentSizeIdentifierPortrait];
-        }
-        
-        int bannerHeight = [self getBannerHeight:toInterfaceOrientation];
-        CGSize screenSize = [self getCorrectedSize];
-        [UIView beginAnimations:@"fixupViews" context:nil];
-        if (_isVisible && ![_bannerView isHidden] && _isLoaded)
-        {
-            NSLog(@"fixupAdView - Ad is Visible");
-            CGRect adBannerViewFrame = [_bannerView frame];
-            adBannerViewFrame.origin.x = 0;
-            
-            if(_onBottom)
-            {
-                adBannerViewFrame.origin.y = screenSize.height - bannerHeight;
-            }
-            
-            else
-            {
-                adBannerViewFrame.origin.y = 0;
-            }
-            
-            [_bannerView setFrame:adBannerViewFrame];
-
-        }
-        else
-        {
-            NSLog(@"fixupAdView - Ad is not Visible or Hidden or not Loaded");
-            CGRect adBannerViewFrame = [_bannerView frame];
-            adBannerViewFrame.origin.x = 0;
-            
-            if(_onBottom)
-            {
-                adBannerViewFrame.origin.y = screenSize.height + bannerHeight;
-            }
-            
-            else
-            {
-                adBannerViewFrame.origin.y = -bannerHeight;
-            }
-            
-            [_bannerView setFrame:adBannerViewFrame];
-         }
-        [UIView commitAnimations];
-    }
-}
-
 
 
 namespace ads
-{	
-    static AdController* adController;
-    
+{
+    static ADBannerView *adBanner=nil;
+    static iAdsController *adController=nil;
+
     void init()
     {
+        NSLog(@"asiAds : Init()");
+        
+        //Create our ad view Controller object
+        adController = [[iAdsController alloc]init];
+        
+        //Setup iAds
+        adBanner = [[ADBannerView alloc] initWithFrame:CGRectZero];
+        
+        //Landscape or Portrait
+        if( [UIApplication sharedApplication].statusBarOrientation == UIInterfaceOrientationLandscapeLeft ||
+           [UIApplication sharedApplication].statusBarOrientation == UIInterfaceOrientationLandscapeRight )
+        {
+            
+            adBanner.requiredContentSizeIdentifiers = [NSSet setWithObject:ADBannerContentSizeIdentifierLandscape];
+            
+            adBanner.currentContentSizeIdentifier = ADBannerContentSizeIdentifierLandscape;
+        }else{
+            
+            adBanner.requiredContentSizeIdentifiers = [NSSet setWithObject:ADBannerContentSizeIdentifierPortrait];
+            
+            adBanner.currentContentSizeIdentifier = ADBannerContentSizeIdentifierPortrait;
+        }
         
 
-		//  This is a bit of voodoo I saw on Stacktrace to force getting a proper orientation during launch when things can report screwy.
-		//  QUOTE: statusBarOrientation will always be portrait until after application:didFinishLaunchingWithOptions:. The only caveat is that 
-		//  you need to enable device orientation notifications prior or asking UIDevice for the orientation.
-		[[UIDevice currentDevice] beginGeneratingDeviceOrientationNotifications];
-		UIDeviceOrientation currentDeviceOrientation = [[UIDevice currentDevice] orientation];
-		[[UIDevice currentDevice] endGeneratingDeviceOrientationNotifications];
-
-
-        NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
-		UIWindow* window = [UIApplication sharedApplication].keyWindow;
-		
-		Class classAdBannerView = NSClassFromString(@"ADBannerView");
-		if(classAdBannerView != nil) 
-		{            
-			ADBannerView* _adBannerView = [[[classAdBannerView alloc] initWithFrame:CGRectZero] autorelease];
-            if(UIDeviceOrientationIsLandscape(currentDeviceOrientation))
-            {
-                NSLog(@"Initializing ad banner content to landscape...");
-                [_adBannerView setRequiredContentSizeIdentifiers:[NSSet setWithObjects: ADBannerContentSizeIdentifierLandscape, nil]];
-            }
-            else
-            {
-                NSLog(@"Initializing ad banner content to portrait...");
-                [_adBannerView setRequiredContentSizeIdentifiers:[NSSet setWithObjects: ADBannerContentSizeIdentifierPortrait, nil]];
-            }
-            //  Hide it off in outer-space for now....
- 			[_adBannerView setFrame:CGRectOffset([_adBannerView frame], 0, -9999)];
-
-			AdController* ac = [[AdController alloc] init];
-            ac.processRotations = YES;
-            
-            adController = ac;
-			[[NSNotificationCenter defaultCenter] addObserver:ac selector:@selector(orientationChanged:) name:@"UIDeviceOrientationDidChangeNotification" object:nil];
-            
-            ac.bannerView = _adBannerView;
-            [_adBannerView setDelegate:ac];
-            ac.contentView = window.rootViewController.view;
-            // for the ads to behave properly they need to be owned by the RootViewControler that
-            // is also controlling the UISTageView
-            [window.rootViewController.view addSubview:ac.bannerView];
-		}
-
-		[pool drain];
+        adBanner.delegate = adController;
+        
+        [[[[UIApplication sharedApplication] keyWindow] rootViewController].view addSubview: adBanner];
+        
+        //Initially hidden. Should wait until we receive an ad before displaying it
+        adBanner.hidden = YES;
+        
     }
- 
     
     void showAd(int position)
     {
+        
         NSLog(@"Showing ad...");
-        if(adController == NULL)
+        if(adBanner == NULL)
         {
             NSLog(@"Need to init ad controller first");
             init();
         }
         
+        //set ad position
         if(position == 0)
         {
-            [adController moveToBottom];
+            adController.onBottom = YES;
         }
         
         else
         {
-            [adController moveToTop];
+            adController.onBottom = NO;
         }
         
-        [adController showAd];
+        [adController show];
     }
+
     
     void hideAd()
     {
         NSLog(@"Hiding ad...");
-        if(adController == NULL)
+        if(adBanner == NULL)
         {
             NSLog(@"Need to init ad controller first");
             init();
         }
         
-        [adController hideAd];
+        [adController hide];
     }
     
-
 }
-
 @end
-
