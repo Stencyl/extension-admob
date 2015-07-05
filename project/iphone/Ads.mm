@@ -3,20 +3,31 @@
 #import <CoreFoundation/CoreFoundation.h>
 #import <iAd/iAd.h>
 
+using namespace ads;
+
 extern "C" void sendEvent(char* event);
 
 
-@interface iAdsController:NSObject <ADBannerViewDelegate>
+@interface iAdsController: UIViewController <ADBannerViewDelegate>
 {
-    BOOL onBottom;
+    ADBannerView *adBanner;
+    UIViewController *root;
+    
+    BOOL isLoaded; // set true if ad is loaded
+    BOOL isVisible;// set true if ad shows
+    BOOL onBottom;//set banner on bottom if true, if false sets banner at top
 }
 
+@property (nonatomic, assign) BOOL isLoaded;
+@property (nonatomic, assign) BOOL isVisible;
 @property (nonatomic, assign) BOOL onBottom;
 
 @end
 
 @implementation iAdsController
 
+@synthesize isLoaded;
+@synthesize isVisible;
 @synthesize onBottom;
 
 -(id) init
@@ -26,89 +37,84 @@ extern "C" void sendEvent(char* event);
     return self;
 }
 
-#pragma mark iAds delegate methods
-
-- (BOOL)bannerViewActionShouldBegin:(ADBannerView*)banner willLeaveApplication:(BOOL)willLeave
+-(void)initWithBanner
 {
-    NSLog(@"User opened ad.");
-    sendEvent("open");
+    root = [[[UIApplication sharedApplication] keyWindow] rootViewController];
+    //Setup iAds
+    adBanner = [[ADBannerView alloc] initWithFrame:CGRectZero];
     
-    return YES;
-}
-
-- (void)bannerViewActionDidFinish:(ADBannerView*)banner
-{
-    NSLog(@"User closed ad.");
-    sendEvent("close");
+    //Landscape or Portrait
+    if( [UIApplication sharedApplication].statusBarOrientation == UIInterfaceOrientationLandscapeLeft ||
+       [UIApplication sharedApplication].statusBarOrientation == UIInterfaceOrientationLandscapeRight )
+    {
+        
+        adBanner.requiredContentSizeIdentifiers = [NSSet setWithObject:ADBannerContentSizeIdentifierLandscape];
+        
+        adBanner.currentContentSizeIdentifier = ADBannerContentSizeIdentifierLandscape;
+    }else{
+        
+        adBanner.requiredContentSizeIdentifiers = [NSSet setWithObject:ADBannerContentSizeIdentifierPortrait];
+        
+        adBanner.currentContentSizeIdentifier = ADBannerContentSizeIdentifierPortrait;
+    }
     
-}
-
-- (void)bannerViewDidLoadAd:(ADBannerView*)banner
-{
-    NSLog(@"Loaded ad. Show it (if Developer set to visible).");
-    sendEvent("load");
+    [adBanner setDelegate:self];
     
-    ads::adBanner.hidden = NO;
+    [root.view addSubview: adBanner];
     
-    [self show];
-    
-}
-
-- (void)bannerView:(ADBannerView*)banner didFailToReceiveAdWithError:(NSError*)error
-{
-    NSLog(@"Could not load ad. Hide it for now.");
-    sendEvent("fail");
-    
-}
-
-- (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation
-{
-    NSLog(@"Ad Controller saying YES to auto-rotate.");
-    return YES;
+    //Initially hidden. Should wait until we receive an ad before displaying it
+    adBanner.hidden = YES;
 }
 
 - (void)show
 {
-    CGSize screenRect = [self getCorrectedSize];
-    CGRect frame = ads::adBanner.frame;
-    frame.origin.y = 0;
-    
-    [UIView beginAnimations:nil context:nil];
-    
-    if(onBottom)
-    {
-        frame.origin.y = screenRect.height - frame.size.height;
-        ads::adBanner.frame=frame;
-    }else
-    {
-        frame.origin.y = 0;
-        ads::adBanner.frame=frame;
-    }
-    
-    [UIView commitAnimations];
+    isVisible = true;
+    [self setPosition];
 }
 
 - (void)hide
 {
+    isVisible = false;
+    [self setPosition];
+}
+
+-(void)setPosition
+{
     CGSize screenRect = [self getCorrectedSize];
-    CGRect frame = ads::adBanner.frame;
+    CGRect frame = adBanner.frame;
     frame.origin.y = 0;
     
     [UIView beginAnimations:nil context:nil];
     
-    if(onBottom)
-    {
-        frame.origin.y = screenRect.height + frame.size.height;
-        ads::adBanner.frame=frame;
-    }else
-    {
-        frame.origin.y = -frame.size.height;
-        ads::adBanner.frame=frame;
-    }
+    if (isVisible && ![adBanner isHidden] && isLoaded) {
+        
+        if(onBottom)
+        {
+            frame.origin.y = screenRect.height - frame.size.height;
+            
+        }else
+        {
+            frame.origin.y = 0;
+        }
+        
+        adBanner.frame=frame;
 
+    }else {
+        
+        if(onBottom)
+        {
+            frame.origin.y = screenRect.height + frame.size.height;
+        }else
+        {
+            frame.origin.y = -frame.size.height;
+        }
+        
+        adBanner.frame=frame;
+    }
     
     [UIView commitAnimations];
 }
+
 
 
 //  Normal [UIScreen mainScreen] will always report portrait mode.  So check current orientation and
@@ -121,11 +127,67 @@ extern "C" void sendEvent(char* event);
     return correctSize;
 }
 
+#pragma mark iAds delegate methods
+
+- (BOOL)bannerViewActionShouldBegin:(ADBannerView*)banner willLeaveApplication:(BOOL)willLeave
+{
+    NSLog(@"User opened ad.");
+    sendEvent("open");
+    
+    isLoaded = false;
+    [self setPosition];
+    
+    return YES;
+}
+
+- (void)bannerViewActionDidFinish:(ADBannerView*)banner
+{
+    NSLog(@"User closed ad.");
+    sendEvent("close");
+    
+    isLoaded = true;
+    [self setPosition];
+}
+
+- (void)bannerViewDidLoadAd:(ADBannerView*)banner
+{
+    NSLog(@"Loaded ad. Show it (if Developer set to visible).");
+    sendEvent("load");
+    
+    isLoaded = true;
+    adBanner.hidden = NO;
+    [self setPosition];
+    
+}
+
+- (void)bannerView:(ADBannerView*)banner didFailToReceiveAdWithError:(NSError*)error
+{
+    NSLog(@"Could not load ad. Hide it for now.");
+    sendEvent("fail");
+    
+    isLoaded = false;
+    [self setPosition];
+}
+
+- (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation
+{
+    NSLog(@"Ad Controller saying YES to auto-rotate.");
+    
+    if(UIInterfaceOrientationIsLandscape(toInterfaceOrientation))
+    {
+        adBanner.currentContentSizeIdentifier = ADBannerContentSizeIdentifierLandscape;
+    }
+    else
+    {
+        adBanner.currentContentSizeIdentifier = ADBannerContentSizeIdentifierPortrait;
+    }
+    return YES;
+}
+
 
 namespace ads
 {
-    static ADBannerView *adBanner=nil;
-    static iAdsController *adController=nil;
+    static iAdsController *adController;
 
     void init()
     {
@@ -134,31 +196,7 @@ namespace ads
         //Create our ad view Controller object
         adController = [[iAdsController alloc]init];
         
-        //Setup iAds
-        adBanner = [[ADBannerView alloc] initWithFrame:CGRectZero];
-        
-        //Landscape or Portrait
-        if( [UIApplication sharedApplication].statusBarOrientation == UIInterfaceOrientationLandscapeLeft ||
-           [UIApplication sharedApplication].statusBarOrientation == UIInterfaceOrientationLandscapeRight )
-        {
-            
-            adBanner.requiredContentSizeIdentifiers = [NSSet setWithObject:ADBannerContentSizeIdentifierLandscape];
-            
-            adBanner.currentContentSizeIdentifier = ADBannerContentSizeIdentifierLandscape;
-        }else{
-            
-            adBanner.requiredContentSizeIdentifiers = [NSSet setWithObject:ADBannerContentSizeIdentifierPortrait];
-            
-            adBanner.currentContentSizeIdentifier = ADBannerContentSizeIdentifierPortrait;
-        }
-        
-
-        adBanner.delegate = adController;
-        
-        [[[[UIApplication sharedApplication] keyWindow] rootViewController].view addSubview: adBanner];
-        
-        //Initially hidden. Should wait until we receive an ad before displaying it
-        adBanner.hidden = YES;
+        [adController initWithBanner];
         
     }
     
@@ -166,7 +204,7 @@ namespace ads
     {
         
         NSLog(@"Showing ad...");
-        if(adBanner == NULL)
+        if(adController == NULL)
         {
             NSLog(@"Need to init ad controller first");
             init();
@@ -190,7 +228,7 @@ namespace ads
     void hideAd()
     {
         NSLog(@"Hiding ad...");
-        if(adBanner == NULL)
+        if(adController == NULL)
         {
             NSLog(@"Need to init ad controller first");
             init();
