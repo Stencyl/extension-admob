@@ -57,6 +57,18 @@ void ads_hidead()
 }
 DEFINE_PRIM(ads_hidead, 0);
 
+void ads_loadfullad()
+{
+    loadFullAd();
+}
+DEFINE_PRIM(ads_loadfullad, 0);
+
+void ads_showfullad()
+{
+    showFullAd();
+}
+DEFINE_PRIM(ads_showfullad, 0);
+
 #endif
 
 extern "C" void ads_main() 

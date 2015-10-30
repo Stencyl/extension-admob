@@ -8,19 +8,22 @@ using namespace ads;
 extern "C" void sendEvent(char* event);
 
 
-@interface iAdsController: UIViewController <ADBannerViewDelegate>
+@interface iAdsController: UIViewController <ADBannerViewDelegate, ADInterstitialAdDelegate>
 {
     ADBannerView *adBanner;
+    ADInterstitialAd *interstitial;
     UIViewController *root;
     
     BOOL isLoaded; // set true if ad is loaded
     BOOL isVisible;// set true if ad shows
     BOOL onBottom;//set banner on bottom if true, if false sets banner at top
+    BOOL requestingFullAd;
 }
 
 @property (nonatomic, assign) BOOL isLoaded;
 @property (nonatomic, assign) BOOL isVisible;
 @property (nonatomic, assign) BOOL onBottom;
+@property (nonatomic, assign) BOOL requestingFullAd;
 
 @end
 
@@ -29,6 +32,7 @@ extern "C" void sendEvent(char* event);
 @synthesize isLoaded;
 @synthesize isVisible;
 @synthesize onBottom;
+@synthesize requestingFullAd;
 
 -(id) init
 {
@@ -37,6 +41,11 @@ extern "C" void sendEvent(char* event);
     return self;
 }
 
+-(void)viewDidLoad {
+    requestingFullAd = NO;
+}
+
+//Banner Ads
 -(void)initWithBanner
 {
     root = [[[UIApplication sharedApplication] keyWindow] rootViewController];
@@ -78,6 +87,7 @@ extern "C" void sendEvent(char* event);
     [self setPosition];
 }
 
+
 -(void)setPosition
 {
     CGSize screenRect = [self getCorrectedSize];
@@ -116,6 +126,28 @@ extern "C" void sendEvent(char* event);
 }
 
 
+- (void)loadFull
+{
+    if (requestingFullAd == NO) {
+        [ADInterstitialAd release];
+        interstitial = [[ADInterstitialAd alloc] init];
+        interstitial.delegate = self;
+        //self.interstitialPresentationPolicy = ADInterstitialPresentationPolicyManual;
+        //[self requestInterstitialAdPresentation];
+        NSLog(@"interstitialAdREQUEST");
+        requestingFullAd = YES;
+    }
+}
+
+- (void)showFull
+{
+    if (interstitial.loaded)
+    {
+        NSLog(@"Showing Fullad...");
+        [interstitial presentFromViewController:[[[UIApplication sharedApplication] keyWindow] rootViewController]];
+    }
+}
+
 
 //  Normal [UIScreen mainScreen] will always report portrait mode.  So check current orientation and
 //  return a properly corrected Size if landscape.
@@ -128,7 +160,7 @@ extern "C" void sendEvent(char* event);
 }
 
 #pragma mark iAds delegate methods
-
+//delegate banner
 - (BOOL)bannerViewActionShouldBegin:(ADBannerView*)banner willLeaveApplication:(BOOL)willLeave
 {
     NSLog(@"User opened ad.");
@@ -184,6 +216,48 @@ extern "C" void sendEvent(char* event);
     return YES;
 }
 
+//delegate Interstitial
+- (BOOL)interstitialAdActionShouldBegin:(ADInterstitialAd *)banner willLeaveApplication:(BOOL)willLeave
+{
+    NSLog(@"User opened ad.");
+    requestingFullAd = NO;
+    sendEvent("open");
+    
+    return YES;
+    
+}
+
+-(void)interstitialAd:(ADInterstitialAd *)interstitialAd didFailWithError:(NSError *)error {
+    interstitial = nil;
+    [interstitialAd release];
+    [ADInterstitialAd release];
+    requestingFullAd = NO;
+    NSLog(@"interstitialAd didFailWithERROR");
+    NSLog(@"%@", error);
+    
+    sendEvent("fail");
+}
+
+-(void)interstitialAdDidLoad:(ADInterstitialAd *)interstitialAd {
+    NSLog(@"interstitialAdDidLOAD");
+    
+    sendEvent("load");
+}
+
+-(void)interstitialAdDidUnload:(ADInterstitialAd *)interstitialAd {
+    interstitial = nil;
+    [interstitialAd release];
+    [ADInterstitialAd release];
+    requestingFullAd = NO;
+    NSLog(@"interstitialAdDidUNLOAD");
+}
+
+-(void)interstitialAdActionDidFinish:(ADInterstitialAd *)interstitialAd {
+
+    NSLog(@"interstitialAdDidFINISH");
+    
+    sendEvent("close");
+}
 
 namespace ads
 {
@@ -235,6 +309,28 @@ namespace ads
         }
         
         [adController hide];
+    }
+    
+    void loadFullAd()
+    {
+        NSLog(@"Loading Fullad...");
+        if(adController == NULL)
+        {
+            adController = [[iAdsController alloc]init];
+        }
+        
+        [adController loadFull];
+    }
+    
+    void showFullAd()
+    {
+        NSLog(@"Showing Fullad...");
+        if(adController == NULL)
+        {
+            adController = [[iAdsController alloc]init];
+        }
+        
+        [adController showFull];
     }
     
 }

@@ -85,9 +85,25 @@ class Ads
 		#end
 	}
 	
+	public static function loadFullAd():Void
+	{
+		#if(mobile && !android && !air)
+		ads_loadfullad();
+		#end
+	}
+	
+	public static function showFullAd():Void
+	{
+		#if(mobile && !android && !air)
+		ads_showfullad();
+		#end
+	}
+	
 	#if(mobile && !android && !air)
 	private static var set_event_handle = Lib.load("ads", "ads_set_event_handle", 1);
 	private static var ads_showad = Lib.load("ads", "ads_showad", 1);
 	private static var ads_hidead = Lib.load("ads", "ads_hidead", 0);
+	private static var ads_loadfullad = Lib.load("ads", "ads_loadfullad", 0);
+	private static var ads_showfullad = Lib.load("ads", "ads_showfullad", 0);
 	#end
 }
