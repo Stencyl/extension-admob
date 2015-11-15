@@ -18,12 +18,14 @@ extern "C" void sendEvent(char* event);
     BOOL isVisible;// set true if ad shows
     BOOL onBottom;//set banner on bottom if true, if false sets banner at top
     BOOL requestingFullAd;
+    BOOL closed;
 }
 
 @property (nonatomic, assign) BOOL isLoaded;
 @property (nonatomic, assign) BOOL isVisible;
 @property (nonatomic, assign) BOOL onBottom;
 @property (nonatomic, assign) BOOL requestingFullAd;
+@property (nonatomic, assign) BOOL closed;
 
 @end
 
@@ -33,6 +35,7 @@ extern "C" void sendEvent(char* event);
 @synthesize isVisible;
 @synthesize onBottom;
 @synthesize requestingFullAd;
+@synthesize closed;
 
 -(id) init
 {
@@ -42,7 +45,23 @@ extern "C" void sendEvent(char* event);
 }
 
 -(void)viewDidLoad {
+    
+    [super viewDidLoad];
+    
     requestingFullAd = NO;
+    closed = NO;
+    [UIViewController prepareInterstitialAds];
+    
+}
+
+- (void)dealloc {
+    
+    requestingFullAd = NO;
+    closed = NO;
+    interstitial = nil;
+    [ADInterstitialAd release];
+    
+    [super dealloc];
 }
 
 //Banner Ads
@@ -129,13 +148,16 @@ extern "C" void sendEvent(char* event);
 - (void)loadFull
 {
     if (requestingFullAd == NO) {
-        [ADInterstitialAd release];
+        //[ADInterstitialAd release];
+        
         interstitial = [[ADInterstitialAd alloc] init];
         interstitial.delegate = self;
-        //self.interstitialPresentationPolicy = ADInterstitialPresentationPolicyManual;
-        //[self requestInterstitialAdPresentation];
+        
+        self.interstitialPresentationPolicy = ADInterstitialPresentationPolicyManual;
+        [self requestInterstitialAdPresentation];
         NSLog(@"interstitialAdREQUEST");
         requestingFullAd = YES;
+        closed = NO;
     }
 }
 
@@ -145,6 +167,7 @@ extern "C" void sendEvent(char* event);
     {
         NSLog(@"Showing Fullad...");
         [interstitial presentFromViewController:[[[UIApplication sharedApplication] keyWindow] rootViewController]];
+        
     }
 }
 
@@ -217,10 +240,10 @@ extern "C" void sendEvent(char* event);
 }
 
 //delegate Interstitial
-- (BOOL)interstitialAdActionShouldBegin:(ADInterstitialAd *)banner willLeaveApplication:(BOOL)willLeave
-{
+- (BOOL)interstitialAdActionShouldBegin:(ADInterstitialAd *)banner willLeaveApplication:(BOOL)willLeave {
+    
     NSLog(@"User opened ad.");
-    requestingFullAd = NO;
+    
     sendEvent("open");
     
     return YES;
@@ -229,9 +252,9 @@ extern "C" void sendEvent(char* event);
 
 -(void)interstitialAd:(ADInterstitialAd *)interstitialAd didFailWithError:(NSError *)error {
     interstitial = nil;
-    [interstitialAd release];
     [ADInterstitialAd release];
     requestingFullAd = NO;
+    
     NSLog(@"interstitialAd didFailWithERROR");
     NSLog(@"%@", error);
     
@@ -239,6 +262,7 @@ extern "C" void sendEvent(char* event);
 }
 
 -(void)interstitialAdDidLoad:(ADInterstitialAd *)interstitialAd {
+    
     NSLog(@"interstitialAdDidLOAD");
     
     sendEvent("load");
@@ -246,17 +270,28 @@ extern "C" void sendEvent(char* event);
 
 -(void)interstitialAdDidUnload:(ADInterstitialAd *)interstitialAd {
     interstitial = nil;
-    [interstitialAd release];
     [ADInterstitialAd release];
     requestingFullAd = NO;
+    
     NSLog(@"interstitialAdDidUNLOAD");
+    
+    sendEvent("fail");
 }
 
 -(void)interstitialAdActionDidFinish:(ADInterstitialAd *)interstitialAd {
-
-    NSLog(@"interstitialAdDidFINISH");
     
-    sendEvent("close");
+    if(closed == NO){
+        
+        closed = YES;
+    }else if(requestingFullAd = YES){
+        interstitial = nil;
+        [ADInterstitialAd release];
+        requestingFullAd = NO;
+        
+        sendEvent("close");
+    }
+    
+    NSLog(@"interstitialAdDidFINISH");
 }
 
 namespace ads
