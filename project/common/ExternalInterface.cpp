@@ -1,4 +1,4 @@
-#ifndef IPHONE
+#ifndef STATIC_LINK
 #define IMPLEMENT_API
 #endif
 
@@ -6,34 +6,12 @@
 #define NEKO_COMPATIBLE
 #endif
 
+
 #include <hx/CFFI.h>
-#include "Ads.h"
+#include "AdMobEx.h"
 #include <stdio.h>
 
-#ifdef ANDROID
-#include <jni.h>
-#endif
-
-using namespace ads;
-
-#ifdef ANDROID
-	extern JNIEnv *GetEnv();
-	enum JNIType{
-	   jniUnknown,
-	   jniVoid,
-	   jniObjectString,
-	   jniObjectArray,
-	   jniObject,
-	   jniBoolean,
-	   jniByte,
-	   jniChar,
-	   jniShort,
-	   jniInt,
-	   jniLong,
-	   jniFloat,
-	   jniDouble,
-	};
-#endif
+using namespace admobex;
 
 AutoGCRoot* adEventHandle = 0;
 
@@ -41,46 +19,55 @@ AutoGCRoot* adEventHandle = 0;
 
 static void ads_set_event_handle(value onEvent)
 {
-	adEventHandle = new AutoGCRoot(onEvent);
+    adEventHandle = new AutoGCRoot(onEvent);
 }
 DEFINE_PRIM(ads_set_event_handle, 1);
 
-void ads_showad(value position)
-{
-	showAd(val_int(position));
+static value admobex_init(value banner_id,value interstitial_id, value gravity_mode, value testing_ads){
+	init(val_string(banner_id),val_string(interstitial_id), val_string(gravity_mode), val_bool(testing_ads));
+	return alloc_null();
 }
-DEFINE_PRIM(ads_showad, 1);
+DEFINE_PRIM(admobex_init,4);
 
-void ads_hidead()
-{
-	hideAd();
+static value admobex_banner_show(){
+	showBanner();
+	return alloc_null();
 }
-DEFINE_PRIM(ads_hidead, 0);
+DEFINE_PRIM(admobex_banner_show,0);
 
-void ads_loadfullad()
-{
-    loadFullAd();
+static value admobex_banner_hide(){
+	hideBanner();
+	return alloc_null();
 }
-DEFINE_PRIM(ads_loadfullad, 0);
+DEFINE_PRIM(admobex_banner_hide,0);
 
-void ads_showfullad()
-{
-    showFullAd();
+static value admobex_banner_refresh(){
+	refreshBanner();
+	return alloc_null();
 }
-DEFINE_PRIM(ads_showfullad, 0);
+DEFINE_PRIM(admobex_banner_refresh,0);
+
+static value admobex_interstitial_show(){
+	showInterstitial();
+	return alloc_null();
+}
+DEFINE_PRIM(admobex_interstitial_show,0);
+
+static value admobex_banner_move(value gravity_mode){
+    setBannerPosition(val_string(gravity_mode));
+    return alloc_null();
+}
+DEFINE_PRIM(admobex_banner_move,1);
 
 #endif
 
-extern "C" void ads_main() 
-{	
-	// Here you could do some initialization, if needed	
+extern "C" void admobex_main () {
+    val_int(0); // Fix Neko init
+    
 }
-DEFINE_ENTRY_POINT(ads_main);
+DEFINE_ENTRY_POINT (admobex_main);
 
-extern "C" int ads_register_prims() 
-{ 
-    return 0; 
-}
+extern "C" int admobex_register_prims () { return 0; }
 
 extern "C" void sendEvent(char* type)
 {

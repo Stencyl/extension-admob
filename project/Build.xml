@@ -18,7 +18,8 @@
         <depend name="${HXCPP}/include/hx/CFFI.h"/>
         <compilerflag value="-IiPhone/include"/>
         <compilerflag value="-Iinclude"/>
-		<file name="iphone/Ads.mm"/>
+        <compilerflag value="-F../frameworks"/>
+        <file name="ios/AdMobEx.mm" />
     </files>
     
     <files id="android">
@@ -28,7 +29,7 @@
     
 	<files id="common">
 		<compilerflag value="-Iinclude"/>
-		<file name="common/ExternalInterface.cpp"/>
+        <file name="common/ExternalInterface.cpp"/>
 	</files>
 	
 	<set name="tool" value="exe" unless="iphone"/>
@@ -36,11 +37,13 @@
 	
 	<set name="IOS_ARCH" value="-v7" if="HXCPP_ARMV7"/>
 	<set name="IOS_ARCH" value="-64" if="HXCPP_ARM64"/>
+	<set name="ARM_ARCH" value="-v7" if="HXCPP_ARMV7"/>
 	
 	<set name="ndll-tool" value="dll" unless="iphone"/>
 	<set name="ndll-tool" value="static_link" if="iphone"/>
 	<set name="name_extra" value=".iphoneos${IOS_ARCH}" if="iphoneos"/>
 	<set name="name_extra" value=".iphonesim" if="iphonesim"/>
+    <set name="name_extra" value="${ARM_ARCH}" if="android"/>
 
 	<set name="no_thirdparty_extras" value="1" if="iphone"/>
 	
@@ -50,13 +53,18 @@
 	
 	<set name="name_prefix" value="lib" if="iphone" />
 	
-	<target id="NDLL" output="${name_prefix}ads${name_extra}" tool="linker" toolid="${ndll-tool}">
+	<target id="NDLL" output="${name_prefix}admobex${name_extra}" tool="linker" toolid="${ndll-tool}">
 		<outdir name="../ndll/${BINDIR}" />
 		<ext value=".ndll" unless="mobile"/>
 		<files id="iphone" if="iphone"/>
 		<files id="android" if="android"/>
 		<files id="common"/>
 	</target>
+    
+    <section if="iphone" >
+        <vflag name="-framework" value="GoogleMobileAds" />
+        <files id="iphone" if="iphone" />
+    </section>
 
 	<target id="default">
 	   <target id="NDLL"/>
