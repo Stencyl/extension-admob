@@ -82,26 +82,26 @@ class AdMob {
 		if(data == "interstitialopen")
 		{
 			trace("USER OPENED INTERSTITIAL");
-			Engine.events.addAdEvent(new StencylEvent(StencylEvent.AD_USER_OPEN));
+			Engine.events.addAdEvent(new StencylEvent(StencylEvent.FULL_AD_USER_OPEN));
 		}
 		
-		if(data == "interstitialrclose")
+		if(data == "interstitialclose")
 		{
 			trace("USER CLOSED INTERSTITIAL");
-			Engine.events.addAdEvent(new StencylEvent(StencylEvent.AD_USER_CLOSE));
+			Engine.events.addAdEvent(new StencylEvent(StencylEvent.FULL_AD_USER_CLOSE));
 		}
 		
 		if(data == "interstitialload")
 		{
 			trace("INTERSTITIAL SHOWED UP");
 			
-			Engine.events.addAdEvent(new StencylEvent(StencylEvent.AD_LOADED));
+			Engine.events.addAdEvent(new StencylEvent(StencylEvent.FULL_AD_LOADED));
 		}
 		
 		if(data == "interstitialfail")
 		{
 			trace("INTERSTITIAL FAILED TO LOAD");
-			Engine.events.addAdEvent(new StencylEvent(StencylEvent.AD_FAILED));
+			Engine.events.addAdEvent(new StencylEvent(StencylEvent.FULL_AD_FAILED));
 		}
 	}
 	#end
@@ -175,6 +175,7 @@ class AdMob {
 	public static function showBanner() {
 		try {
 			__showBanner();
+			Engine.events.addAdEvent(new StencylEvent(StencylEvent.AD_USER_OPEN));
 		} catch(e:Dynamic) {
 			trace("ShowAd Exception: "+e);
 		}
@@ -183,6 +184,7 @@ class AdMob {
 	public static function hideBanner() {
 		try {
 			__hideBanner();
+			Engine.events.addAdEvent(new StencylEvent(StencylEvent.AD_USER_CLOSE));
 		} catch(e:Dynamic) {
 			trace("HideAd Exception: "+e);
 		}
@@ -252,25 +254,25 @@ class AdMob {
 	public function onAdmobInterstitialClosed() 
 	{
 		trace("USER CLOSED INTERSTITIAL");
-		Engine.events.addAdEvent(new StencylEvent(StencylEvent.AD_USER_CLOSE));
+		Engine.events.addAdEvent(new StencylEvent(StencylEvent.FULL_AD_USER_CLOSE));
 	}
 			
 	public function onAdmobInterstitialOpened() 
 	{
 		trace("USER OPENED INTERSTITIAL");
-		Engine.events.addAdEvent(new StencylEvent(StencylEvent.AD_USER_OPEN));
+		Engine.events.addAdEvent(new StencylEvent(StencylEvent.FULL_AD_USER_OPEN));
 	}
 	
 	public function onAdmobInterstitialLoaded() 
 	{		
 		trace("INTERSTITIAL SHOWED UP");
-		Engine.events.addAdEvent(new StencylEvent(StencylEvent.AD_LOADED));
+		Engine.events.addAdEvent(new StencylEvent(StencylEvent.FULL_AD_LOADED));
 	}		
 	
 	public function onAdmobInterstitialFailed() 
 	{
 		trace("INTERSTITIAL FAILED TO LOAD");
-		Engine.events.addAdEvent(new StencylEvent(StencylEvent.AD_FAILED));
+		Engine.events.addAdEvent(new StencylEvent(StencylEvent.FULL_AD_FAILED));
 	}
 	#end
 }
