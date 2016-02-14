@@ -15,49 +15,44 @@ using namespace admobex;
 
 extern "C" void sendEvent(char* event);
 
-@interface AdmobController : UIViewController <GADBannerViewDelegate, GADInterstitialDelegate>
+@interface InterstitialListener : NSObject <GADInterstitialDelegate>
 {
-    GADBannerView *bannerView;
+    @public
     GADInterstitial *interstitial;
-    UIViewController *root;
-    
-    BOOL bottom;
-    BOOL bannerLoaded;
-    BOOL bannerFailToLoad;
-    BOOL bannerIsClicked;
-    
-    BOOL interstitialLoaded;
-    BOOL interstitialFailToLoad;
-    BOOL interstitialClosed;
-    BOOL interstitialIsClicked;
 }
 
-@property (nonatomic, assign) BOOL bottom;
-@property (nonatomic, assign) BOOL bannerLoaded;
-@property (nonatomic, assign) BOOL bannerFailToLoad;
-@property (nonatomic, assign) BOOL bannerIsClicked;
-@property (nonatomic, assign) BOOL interstitialLoaded;
-@property (nonatomic, assign) BOOL interstitialFailToLoad;
-@property (nonatomic, assign) BOOL interstitialClosed;
-@property (nonatomic, assign) BOOL interstitialIsClicked;
+- (id)initWithID:(NSString*)ID;
+- (void)show;
+- (bool)isReady;
 
 @end
 
-@implementation AdmobController
+@interface BannerListener : NSObject <GADBannerViewDelegate>
+{
+    @public
+    GADBannerView *bannerView;
+    UIViewController *root;
+    
+    BOOL bottom;
+}
 
-@synthesize bottom;
-@synthesize bannerLoaded;
-@synthesize bannerFailToLoad;
-@synthesize bannerIsClicked;
-@synthesize interstitialLoaded;
-@synthesize interstitialFailToLoad;
-@synthesize interstitialClosed;
-@synthesize interstitialIsClicked;
+-(id)initWithBannerID:(NSString*)bannerID withGravity:(NSString*)GMODE;
+-(void)setPosition:(NSString*)position;
+-(void)showBannerAd;
+-(void)hideBannerAd;
+-(void)reloadBanner;
 
+@property (nonatomic, assign) BOOL bottom;
+
+@end
+
+@implementation InterstitialListener
+
+/////Interstitial
 - (id)initWithID:(NSString*)ID
 {
     self = [super init];
-    NSLog(@"AdMob Init");
+    NSLog(@"AdMob Init Interstitial");
     if(!self) return nil;
     interstitial = [[GADInterstitial alloc] initWithAdUnitID:ID];
     interstitial.delegate = self;
@@ -67,19 +62,20 @@ extern "C" void sendEvent(char* event);
     return self;
 }
 
+- (bool)isReady{
+    return (interstitial != nil && interstitial.isReady);
+}
+
 - (void)show
 {
-    if (interstitial != nil && interstitial.isReady) {
-        [interstitial presentFromRootViewController:[[[UIApplication sharedApplication] keyWindow] rootViewController]];
-    }
+    if (![self isReady]) return;
+    [interstitial presentFromRootViewController:[[[UIApplication sharedApplication] keyWindow] rootViewController]];
 }
 
 /// Called when an interstitial ad request succeeded.
 - (void)interstitialDidReceiveAd:(GADInterstitial *)ad
 {
     
-    interstitialLoaded = YES;
-    interstitialFailToLoad = NO;
     sendEvent("interstitialload");
     NSLog(@"interstitialDidReceiveAd");
 }
@@ -87,8 +83,6 @@ extern "C" void sendEvent(char* event);
 /// Called when an interstitial ad request failed.
 - (void)interstitial:(GADInterstitial *)ad didFailToReceiveAdWithError:(GADRequestError *)error
 {
-    interstitialFailToLoad = YES;
-    interstitialLoaded = NO;
     sendEvent("interstitialfail");
     NSLog(@"interstitialDidFailToReceiveAdWithError: %@", [error localizedDescription]);
 }
@@ -109,7 +103,6 @@ extern "C" void sendEvent(char* event);
 /// Called just after dismissing an interstitial and it has animated off the screen.
 - (void)interstitialDidDismissScreen:(GADInterstitial *)ad
 {
-    interstitialClosed = YES;
     sendEvent("interstitialclose");
     NSLog(@"interstitialDidDismissScreen");
 }
@@ -118,13 +111,22 @@ extern "C" void sendEvent(char* event);
 /// ad that will launch another application (such as the App Store).
 - (void)interstitialWillLeaveApplication:(GADInterstitial *)ad
 {
-    interstitialIsClicked = YES;
-    NSLog(@"interstitialWillLeaveApplication");
+    sendEvent("interstitialclicked");
+    NSLog(@"interstitialWillLeaveApplication is cliced");
 }
 
--(void)initWithBannerID:(NSString*)bannerID withGravity:(NSString*)GMODE
+@end
+
+@implementation BannerListener
+
+@synthesize bottom;
+
+/////Banner
+-(id)initWithBannerID:(NSString*)bannerID withGravity:(NSString*)GMODE
 {
-    
+    self = [super init];
+    NSLog(@"AdMob Init Banner");
+    if(!self) return nil;
     root = [[[UIApplication sharedApplication] keyWindow] rootViewController];
     
     if( [UIApplication sharedApplication].statusBarOrientation == UIInterfaceOrientationLandscapeLeft ||
@@ -148,6 +150,8 @@ extern "C" void sendEvent(char* event);
     bannerView.hidden=true;
     // set bannerposition
     [self setPosition:GMODE];
+    
+    return self;
     
 }
 
@@ -188,8 +192,6 @@ extern "C" void sendEvent(char* event);
 /// Called when an banner ad request succeeded.
 - (void)adViewDidReceiveAd:(GADBannerView *)bannerView
 {
-    bannerLoaded = YES;
-    bannerFailToLoad = NO;
     sendEvent("bannerload");
     NSLog(@"AdMob: banner ad successfully loaded!");
 }
@@ -197,8 +199,6 @@ extern "C" void sendEvent(char* event);
 /// Called when an banner ad request failed.
 - (void)adView:(GADBannerView *)bannerView didFailToReceiveAdWithError:(GADRequestError *)error
 {
-    bannerFailToLoad = YES;
-    bannerLoaded = NO;
     sendEvent("bannerfail");
     NSLog(@"AdMob: banner failed to load...");
 }
@@ -220,24 +220,19 @@ extern "C" void sendEvent(char* event);
 /// ad that will launch another application (such as the App Store).
 - (void)adViewWillLeaveApplication:(GADBannerView *)bannerView
 {
-    bannerIsClicked = YES;
-    NSLog(@"AdMob: banner made the user leave the game.");
+    sendEvent("bannerclicked");
+    NSLog(@"AdMob: banner made the user leave the game. is clicked");
 }
-
 
 @end
 
 namespace admobex {
 	
-	static AdmobController *adController;
+	static InterstitialListener *interstitialListener;
+    static BannerListener *bannerListener;
     static NSString *interstitialID;
     
 	void init(const char *__BannerID, const char *__InterstitialID, const char *gravityMode, bool testingAds){
-        
-        if(adController == NULL)
-        {
-            adController = [[AdmobController alloc] init];
-        }
         
         NSString *GMODE = [NSString stringWithUTF8String:gravityMode];
         NSString *bannerID = [NSString stringWithUTF8String:__BannerID];
@@ -249,55 +244,55 @@ namespace admobex {
         }
         
         //Banner
-        if (bannerID != "") {
-            [adController initWithBannerID:bannerID withGravity:GMODE];
+        if ([bannerID length] != 0) {
+            bannerListener = [[BannerListener alloc] initWithBannerID:bannerID withGravity:GMODE];
         }
         
         // INTERSTITIAL
-        if (interstitialID != "") {
-            [adController initWithID:interstitialID];
+        if ([interstitialID length] != 0) {
+            interstitialListener = [[InterstitialListener alloc] initWithID:interstitialID];
         }
     }
     
     void setBannerPosition(const char *gravityMode)
     {
-        if(adController != NULL)
+        if(bannerListener != NULL)
         {
             NSString *GMODE = [NSString stringWithUTF8String:gravityMode];
             
-            [adController setPosition:GMODE];
+            [bannerListener setPosition:GMODE];
         }
     }
     
     void showBanner()
     {
-        if(adController != NULL)
+        if(bannerListener != NULL)
         {
-            [adController showBannerAd];
+            [bannerListener showBannerAd];
         }
         
     }
     
     void hideBanner()
     {
-        if(adController != NULL)
+        if(bannerListener != NULL)
         {
-            [adController hideBannerAd];
+            [bannerListener hideBannerAd];
         }
     }
     
 	void refreshBanner()
     {
-        if(adController != NULL)
+        if(bannerListener != NULL)
         {
-            [adController reloadBanner];
+            [bannerListener reloadBanner];
         }
 	}
 
     void showInterstitial()
     {
-        if(adController!=NULL) [adController show];
-        [adController initWithID:interstitialID];
+        if(interstitialListener!=NULL) [interstitialListener show];
+        interstitialListener = [[InterstitialListener alloc] initWithID:interstitialID];
     }
     
 }

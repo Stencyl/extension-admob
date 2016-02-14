@@ -58,17 +58,10 @@ public class AdMobEx extends Extension {
     
 	private static boolean failInterstitial=false;
 	private static boolean loadingInterstitial=false;
-    private static boolean interstitialLoaded = false;
-    private static boolean interstitialFailedToLoad = false;
-    private static boolean interstitialClicked =false;
-    private static boolean interstitialClosed =false;
 	private static String interstitialId=null;
 
 	private static boolean failBanner=false;
 	private static boolean loadingBanner=false;
-	private static boolean bannerLoaded = false;
-	private static boolean bannerFailedToLoad = false;
-	private static boolean bannerClicked =false;
 	private static boolean mustBeShowingBanner=false;
 	private static String bannerId=null;
 
@@ -256,20 +249,17 @@ public class AdMobEx extends Extension {
                  interstitial.setAdListener(new AdListener() {
                     public void onAdLoaded() {
                         loadingInterstitial=false;
-                        interstitialLoaded = true;
                         callback.call("onAdmobInterstitialLoaded", new Object[] {});
                         Log.d("AdMobEx","Received Interstitial!");
                     }
                     public void onAdFailedToLoad(int errorcode) {
                         loadingInterstitial=false;
                         failInterstitial=true;
-                        interstitialFailedToLoad = true;
                         callback.call("onAdmobInterstitialFailed", new Object[] {});
 						reloadInterstitial();
                         Log.d("AdMobEx","Fail to get Interstitial: "+errorcode);
                     }
                     public void onAdClosed() {
-                        interstitialClosed = true;
                         reloadInterstitial();
                         callback.call("onAdmobInterstitialClosed", new Object[] {});
                         Log.d("AdMobEx","Dismiss Interstitial");
@@ -278,7 +268,7 @@ public class AdMobEx extends Extension {
                         callback.call("onAdmobInterstitialOpened", new Object[] {});
                     }
                     public void onAdLeftApplication(){
-                        interstitialClicked = true;
+                        callback.call("onAdmobInterstitialClicked", new Object[] {});
                     }
                  });
                  reloadInterstitial();
@@ -306,7 +296,6 @@ public class AdMobEx extends Extension {
         banner.setAdListener(new AdListener() {
             public void onAdLoaded() {
                 loadingBanner=false;
-				bannerLoaded = true;
                 callback.call("onAdmobBannerLoaded", new Object[] {});
                 Log.d("AdMobEx","Received Banner OK!");
                 if(mustBeShowingBanner){
@@ -318,7 +307,6 @@ public class AdMobEx extends Extension {
             public void onAdFailedToLoad(int errorcode) {
                 loadingBanner=false;
                 failBanner=true;
-				bannerFailedToLoad = true;
                 callback.call("onAdmobBannerFailed", new Object[] {});
                 Log.d("AdMobEx","Fail to get Banner: "+errorcode);
             }
@@ -329,7 +317,7 @@ public class AdMobEx extends Extension {
                 callback.call("onAdmobBannerOpened", new Object[] {});
             }
 			public void onAdLeftApplication(){
-                    bannerClicked = true;
+                    callback.call("onAdmobBannerClicked", new Object[] {});
             }
         });
         

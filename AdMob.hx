@@ -1,12 +1,6 @@
 package;
 
-#if cpp
-import cpp.Lib;
-#elseif neko
-import neko.Lib;
-#else
 import openfl.Lib;
-#end
 
 #if android
 import openfl.utils.JNI;
@@ -45,8 +39,12 @@ class AdMob {
 	private static var __onResize:Void->Void = function(){};
 	private static var __refresh:Void->Void = function(){};
 	private static var __setBannerPosition:String->Void = function(gravityMode:String){};
-
+	
 	////////////////////////////////////////////////////////////////////////////
+
+	private static var lastTimeInterstitial:Int = -60*1000;
+	private static var displayCallsCounter:Int = 0;
+
 	////////////////////////////////////////////////////////////////////////////
 	
 	#if ios
@@ -79,6 +77,11 @@ class AdMob {
 			trace("BANNER FAILED TO LOAD");
 			Engine.events.addAdEvent(new StencylEvent(StencylEvent.AD_FAILED));
 		}
+		if(data == "bannerclicked")
+		{
+			trace("BANNER IS CLICKED");
+			Engine.events.addAdEvent(new StencylEvent(StencylEvent.AD_CLICKED));
+		}
 		if(data == "interstitialopen")
 		{
 			trace("USER OPENED INTERSTITIAL");
@@ -103,10 +106,20 @@ class AdMob {
 			trace("INTERSTITIAL FAILED TO LOAD");
 			Engine.events.addAdEvent(new StencylEvent(StencylEvent.FULL_AD_FAILED));
 		}
+		if(data == "interstitialclicked")
+		{
+			trace("INTERSTITIAL IS CLICKED");
+			Engine.events.addAdEvent(new StencylEvent(StencylEvent.FULL_AD_CLICKED));
+		}
 	}
 	#end
 	
-	public static function showInterstitial() {
+	public static function showInterstitial(minInterval:Int=60, minCallsBeforeDisplay:Int=0) {
+		displayCallsCounter++;
+		if( (Lib.getTimer()-lastTimeInterstitial)<(minInterval*1000) ) return;
+		if( minCallsBeforeDisplay > displayCallsCounter ) return;
+		displayCallsCounter = 0;
+		lastTimeInterstitial = Lib.getTimer();
 		try{
 			__showInterstitial();
 		}catch(e:Dynamic){
@@ -245,10 +258,16 @@ class AdMob {
 		Engine.events.addAdEvent(new StencylEvent(StencylEvent.AD_LOADED));
 	}		
 	
-	public function onAdmobBannerBannerFailed() 
+	public function onAdmobBannerFailed() 
 	{
 		trace("BANNER FAILED TO LOAD");
 		Engine.events.addAdEvent(new StencylEvent(StencylEvent.AD_FAILED));
+	}
+	
+	public function onAdmobBannerClicked() 
+	{
+		trace("BANNER IS CLICKED");
+		Engine.events.addAdEvent(new StencylEvent(StencylEvent.AD_CLICKED));
 	}
 	
 	public function onAdmobInterstitialClosed() 
@@ -273,6 +292,11 @@ class AdMob {
 	{
 		trace("INTERSTITIAL FAILED TO LOAD");
 		Engine.events.addAdEvent(new StencylEvent(StencylEvent.FULL_AD_FAILED));
+	}
+	public function onAdmobInterstitialClicked() 
+	{
+		trace("INTERSTITIAL IS CLICKED");
+		Engine.events.addAdEvent(new StencylEvent(StencylEvent.FULL_AD_CLICKED));
 	}
 	#end
 }
