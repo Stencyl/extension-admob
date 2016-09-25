@@ -56,7 +56,9 @@ public class AdMobEx extends Extension {
 	//////////////////////////////////////////////////////////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////////////////////////////////
     
-	private static boolean failInterstitial=false;
+	private static String admobId=null;
+    
+    private static boolean failInterstitial=false;
 	private static boolean loadingInterstitial=false;
 	private static String interstitialId=null;
 
@@ -81,9 +83,10 @@ public class AdMobEx extends Extension {
 	}
 
 
-	static public void init(HaxeObject cb, String bannerId, String interstitialId, String gravityMode, boolean testingAds){
+	static public void init(HaxeObject cb, String admobId, String bannerId, String interstitialId, String gravityMode, boolean testingAds){
         
         callback = cb;
+        AdMobEx.admobId=admobId;
 		AdMobEx.bannerId=bannerId;
 		AdMobEx.interstitialId=interstitialId;
 		AdMobEx.testingAds=testingAds;
@@ -101,18 +104,18 @@ public class AdMobEx extends Extension {
 		});	
 	}
 
+    static public void loadInterstitial() {
+        Log.d("AdMobEx","Load Interstitial Begin");
+        if(interstitialId=="") return;
+        mainActivity.runOnUiThread(new Runnable() {
+            public void run() { reloadInterstitial();}
+        });
+
+        Log.d("AdMobEx","Load Interstitial End");
+    }
 
 	static public void showInterstitial() {
 		Log.d("AdMobEx","Show Interstitial Begin");
-		if(loadingInterstitial) return;
-		if(failInterstitial){
-			mainActivity.runOnUiThread(new Runnable() {
-				public void run() { reloadInterstitial();}
-			});	
-			return;
-		}
-		Log.d("AdMobEx","Show Interstitial Middle");
-
 		if(interstitialId=="") return;
 		mainActivity.runOnUiThread(new Runnable() {
 			public void run() {	if(interstitial.isLoaded()) interstitial.show();	}
@@ -226,6 +229,8 @@ public class AdMobEx extends Extension {
         {
             public void run()
             {
+                MobileAds.initialize(mainActivity.getApplicationContext(), admobId);
+                Log.d("AdMobEx","Admob AppID: "+admobId);
         
                 AdRequest.Builder builder = new AdRequest.Builder();
         
@@ -256,11 +261,11 @@ public class AdMobEx extends Extension {
                         loadingInterstitial=false;
                         failInterstitial=true;
                         callback.call("onAdmobInterstitialFailed", new Object[] {});
-						reloadInterstitial();
+						//reloadInterstitial();
                         Log.d("AdMobEx","Fail to get Interstitial: "+errorcode);
                     }
                     public void onAdClosed() {
-                        reloadInterstitial();
+                        //reloadInterstitial();
                         callback.call("onAdmobInterstitialClosed", new Object[] {});
                         Log.d("AdMobEx","Dismiss Interstitial");
                     }
@@ -329,7 +334,7 @@ public class AdMobEx extends Extension {
     
     public static void reloadInterstitial(){
         if(interstitialId=="") return;
-        if(loadingInterstitial) return;
+        //if(loadingInterstitial) return;
         Log.d("AdMobEx","Reload Interstitial");
         loadingInterstitial=true;
         interstitial.loadAd(adReq);

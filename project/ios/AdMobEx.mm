@@ -10,10 +10,21 @@
 #import "GoogleMobileAds/GADBannerView.h"
 #import "GoogleMobileAds/GADBannerViewDelegate.h"
 #import "GoogleMobileAds/GADInterstitial.h"
+#import "GoogleMobileAds/GADMobileAds.h"
 
 using namespace admobex;
 
 extern "C" void sendEvent(char* event);
+
+@interface InitializeAdmobListener : NSObject
+    {
+        @public
+        //GADMobileAds *initialize;
+    }
+    
+- (id)initWithAdmobID:(NSString*)ID;
+    
+@end
 
 @interface InterstitialListener : NSObject <GADInterstitialDelegate>
 {
@@ -46,6 +57,22 @@ extern "C" void sendEvent(char* event);
 
 @end
 
+@implementation InitializeAdmobListener
+    
+- (id)initWithAdmobID:(NSString*)ID
+{
+    self = [super init];
+    if(!self) return nil;
+    
+    //initialize = [[GADMobileAds alloc] configureWithApplicationID:ID];
+    
+    [GADMobileAds configureWithApplicationID:ID];
+    
+    return self;
+}
+    
+@end
+
 @implementation InterstitialListener
 
 /////Interstitial
@@ -58,7 +85,9 @@ extern "C" void sendEvent(char* event);
     interstitial.delegate = self;
     GADRequest *request = [GADRequest request];
     request.testDevices = @[ kGADSimulatorID ];
-    [interstitial performSelector:@selector(loadRequest:) withObject:request afterDelay:1];
+    //[interstitial performSelector:@selector(loadRequest:) withObject:request afterDelay:1];
+    [interstitial loadRequest:request];
+    
     return self;
 }
 
@@ -69,6 +98,7 @@ extern "C" void sendEvent(char* event);
 - (void)show
 {
     if (![self isReady]) return;
+    
     [interstitial presentFromRootViewController:[[[UIApplication sharedApplication] keyWindow] rootViewController]];
 }
 
@@ -112,7 +142,7 @@ extern "C" void sendEvent(char* event);
 - (void)interstitialWillLeaveApplication:(GADInterstitial *)ad
 {
     sendEvent("interstitialclicked");
-    NSLog(@"interstitialWillLeaveApplication is cliced");
+    NSLog(@"interstitialWillLeaveApplication is clicked");
 }
 
 @end
@@ -126,6 +156,7 @@ extern "C" void sendEvent(char* event);
 {
     self = [super init];
     NSLog(@"AdMob Init Banner");
+    
     if(!self) return nil;
     root = [[[UIApplication sharedApplication] keyWindow] rootViewController];
     
@@ -228,20 +259,25 @@ extern "C" void sendEvent(char* event);
 
 namespace admobex {
 	
-	static InterstitialListener *interstitialListener;
+    static InitializeAdmobListener *initializeAdmobListener;
+    static InterstitialListener *interstitialListener;
     static BannerListener *bannerListener;
     static NSString *interstitialID;
     
-	void init(const char *__BannerID, const char *__InterstitialID, const char *gravityMode, bool testingAds){
+	void init(const char *__AdmobID, const char *__BannerID, const char *__InterstitialID, const char *gravityMode, bool testingAds){
         
+        NSString *admobID = [NSString stringWithUTF8String:__AdmobID];
         NSString *GMODE = [NSString stringWithUTF8String:gravityMode];
         NSString *bannerID = [NSString stringWithUTF8String:__BannerID];
         interstitialID = [NSString stringWithUTF8String:__InterstitialID];
 
         if(testingAds){
+            admobID = @"ca-app-pub-3940256099942544~1458002511"; // ADMOB GENERIC TESTING appID
             interstitialID = @"ca-app-pub-3940256099942544/4411468910"; // ADMOB GENERIC TESTING INTERSTITIAL
             bannerID = @"ca-app-pub-3940256099942544/2934735716"; // ADMOB GENERIC TESTING BANNER
         }
+        
+        initializeAdmobListener = [[InitializeAdmobListener alloc] initWithAdmobID:admobID];
         
         //Banner
         if ([bannerID length] != 0) {
@@ -289,10 +325,16 @@ namespace admobex {
         }
 	}
 
+    void loadInterstitial()
+    {
+        //if(interstitialListener!=NULL) [interstitialListener show];
+        interstitialListener = [[InterstitialListener alloc] initWithID:interstitialID];
+    }
+    
     void showInterstitial()
     {
         if(interstitialListener!=NULL) [interstitialListener show];
-        interstitialListener = [[InterstitialListener alloc] initWithID:interstitialID];
+        //interstitialListener = [[InterstitialListener alloc] initWithID:interstitialID];
     }
     
 }
