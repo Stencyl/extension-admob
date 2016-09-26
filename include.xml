@@ -19,8 +19,13 @@
 		<dependency name="EventKit.framework" />
 		<dependency name="EventKitUI.framework" />
 		<dependency name="MessageUI.framework" />
+        <dependency name="MobileCoreServices.framework" />
 		<dependency name="StoreKit.framework" />
 		<dependency name="SystemConfiguration.framework" />
+        <dependency name="SafariServices.framework" />
+        <dependency name="CoreBluetooth.framework" />
+        <dependency name="GLKit.framework" />
+        <dependency name="CoreVideo.framework" />
 	</section>
 	
 </extension>
