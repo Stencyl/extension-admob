@@ -6,7 +6,8 @@ import openfl.Lib;
 import openfl.utils.JNI;
 #end
 
-import scripts.MyAssets;
+import com.stencyl.APIKeys;
+import com.stencyl.Config;
 import com.stencyl.Engine;
 import com.stencyl.event.EventMaster;
 import com.stencyl.event.StencylEvent;
@@ -154,7 +155,7 @@ class AdMob {
 			__refresh = cpp.Lib.load("adMobEx","admobex_banner_refresh",0);
 			__setBannerPosition = cpp.Lib.load("admobex","admobex_banner_move",1);
 
-			__init(admobId,MyAssets.ioswhirlID,MyAssets.ioswhirlID1,gravityMode,MyAssets.testAds);
+			__init(admobId,APIKeys.ioswhirlID,APIKeys.ioswhirlID1,gravityMode,Config.testAds);
 			set_event_handle(notifyListeners);
 		}catch(e:Dynamic){
 			trace("iOS INIT Exception: "+e);
@@ -181,10 +182,10 @@ class AdMob {
 			var args = new Array<Dynamic>();
 			args.push(new AdMob());
 			args.push(admobId);
-			args.push(MyAssets.whirlID);
-			args.push(MyAssets.whirlID1);
+			args.push(APIKeys.whirlID);
+			args.push(APIKeys.whirlID1);
 			args.push(gravityMode);
-			args.push(MyAssets.testAds);
+			args.push(Config.testAds);
 			_init_func(args);
 		}catch(e:Dynamic){
 			trace("Android INIT Exception: "+e);
