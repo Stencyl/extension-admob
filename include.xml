@@ -3,7 +3,7 @@
 	<section if="android">
         <classpath name="src" />
 		
-		<dependency name="google" path="dependencies/admob" if="android" />
+		<dependency name="admob" path="dependencies/admob" if="android" />
         
         <android extension="com.byrobin.admobex.AdMobEx" />
 	</section>

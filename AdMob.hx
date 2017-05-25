@@ -29,7 +29,7 @@ class AdMob {
 	///////////////////////////////////////////////////////////////////////////
 	#if ios
 	private static var __init:String->String->String->String->Bool->Void = function(admobId:String, bannerId:String, interstitialId:String, gravityMode:String, testingAds:Bool){};
-	private static var set_event_handle = Lib.load("adMobEx", "ads_set_event_handle", 1);
+	private static var set_event_handle = cpp.Lib.load("adMobEx", "ads_set_event_handle", 1);
 	#end
 	#if android
 	private static var _init_func:Dynamic;
