@@ -3,7 +3,7 @@ package;
 import openfl.Lib;
 
 #if android
-import openfl.utils.JNI;
+import lime.system.JNI;
 #end
 
 import com.stencyl.APIKeys;
@@ -167,12 +167,12 @@ class AdMob {
 		initialized = true;
 		try{
 			// JNI METHOD LINKING
-			__showBanner = openfl.utils.JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "showBanner", "()V");
-			__hideBanner = openfl.utils.JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "hideBanner", "()V");
-			__loadInterstitial = openfl.utils.JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "loadInterstitial", "()V");
-			__showInterstitial = openfl.utils.JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "showInterstitial", "()V");
-			__onResize = openfl.utils.JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "onResize", "()V");
-			__setBannerPosition = openfl.utils.JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "setBannerPosition", "(Ljava/lang/String;)V");
+			__showBanner = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "showBanner", "()V");
+			__hideBanner = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "hideBanner", "()V");
+			__loadInterstitial = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "loadInterstitial", "()V");
+			__showInterstitial = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "showInterstitial", "()V");
+			__onResize = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "onResize", "()V");
+			__setBannerPosition = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "setBannerPosition", "(Ljava/lang/String;)V");
 
 			if(_init_func == null)
 			{
