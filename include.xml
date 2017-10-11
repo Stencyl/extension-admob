@@ -13,6 +13,7 @@
 		<dependency name="AdSupport.framework" />
 		<dependency name="AudioToolbox.framework" />
 		<dependency name="AVFoundation.framework" />
+		<dependency name="CFNetwork.framework" />
 		<dependency name="CoreGraphics.framework" />
 		<dependency name="CoreMedia.framework" />
 		<dependency name="CoreTelephony.framework" />
