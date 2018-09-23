@@ -41,6 +41,8 @@ class AdMob {
 	private static var __onResize:Void->Void = function(){};
 	private static var __refresh:Void->Void = function(){};
 	private static var __setBannerPosition:String->Void = function(gravityMode:String){};
+	private static var __setPrivacyURL:String->Void = function(privacyURL:String){};
+	private static var __showConsentForm:Bool->Void = function(checkConsent:Bool){};
 	
 	////////////////////////////////////////////////////////////////////////////
 
@@ -173,6 +175,8 @@ class AdMob {
 			__showInterstitial = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "showInterstitial", "()V");
 			__onResize = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "onResize", "()V");
 			__setBannerPosition = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "setBannerPosition", "(Ljava/lang/String;)V");
+			__setPrivacyURL = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "setPrivacyURL", "(Ljava/lang/String;)V");
+			__showConsentForm = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "showConsentForm", "(Z)V");
 
 			if(_init_func == null)
 			{
@@ -243,6 +247,32 @@ class AdMob {
 			__setBannerPosition(gravityMode);
 		}catch(e:Dynamic){
 			trace("setBannerPosition Exception: "+e);
+		}
+	}
+	
+	public static function setPrivacyURL(privacyURL:String)
+	{
+		#if ios
+		return; // ios portion will be added later
+		#end
+	
+		try{
+			__setPrivacyURL(privacyURL);
+		}catch(e:Dynamic){
+			trace("setPrivacyURL Exception: "+e);
+		}
+	}
+	
+	public static function showConsentForm(checkConsent:Bool = true)
+	{
+		#if ios
+		return; // ios portion will be added later
+		#end
+	
+		try{
+			__showConsentForm(checkConsent);
+		}catch(e:Dynamic){
+			trace("showConsentForm Exception: "+e);
 		}
 	}
 	

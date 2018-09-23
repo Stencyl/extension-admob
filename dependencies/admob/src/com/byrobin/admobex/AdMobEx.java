@@ -10,6 +10,8 @@ package com.byrobin.admobex;
 import org.haxe.extension.Extension;
 import org.haxe.lime.HaxeObject;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.Date;
 import java.util.Queue;
 
@@ -39,6 +41,8 @@ import android.provider.Settings.Secure;
 import java.security.MessageDigest;
 
 import com.google.android.gms.ads.*;
+import com.google.ads.consent.*;
+import com.google.ads.mediation.admob.AdMobAdapter;
 
 import dalvik.system.DexClassLoader;
 
@@ -52,6 +56,7 @@ public class AdMobEx extends Extension {
     private static LinearLayout layout;
 	private static AdRequest adReq;
     private static HaxeObject callback;
+	private static final String TAG = "AdMobEx";
 
 	//////////////////////////////////////////////////////////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////////////////////////////////
@@ -70,6 +75,14 @@ public class AdMobEx extends Extension {
 	private static AdMobEx instance=null;
 	private static Boolean testingAds=false;
 	private static int gravity=Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL;
+	
+	private static String deviceId;
+	private static String privacyURL;
+	private static ConsentForm form;
+	private static ConsentInformation consentInformation;
+	private static ConsentStatus playerConsent;
+	private static boolean formLoaded = false;
+	private static boolean showWhenLoaded = false;
 
 	//////////////////////////////////////////////////////////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////////////////////////////////
@@ -77,11 +90,10 @@ public class AdMobEx extends Extension {
 	static public AdMobEx getInstance(){
 		if(instance==null && bannerId!=null) instance = new AdMobEx();
 		if(bannerId==null){
-			Log.e("AdMobEx","You tried to get Instance without calling INIT first on AdMobEx class!");
+			Log.e(TAG,"You tried to get Instance without calling INIT first on AdMobEx class!");
 		}
 		return instance;
 	}
-
 
 	static public void init(HaxeObject cb, String admobId, String bannerId, String interstitialId, String gravityMode, boolean testingAds){
         
@@ -95,8 +107,7 @@ public class AdMobEx extends Extension {
 		mainActivity.runOnUiThread(new Runnable() {
             public void run() 
 			{ 
-			
-				Log.d("AdMobEx","Init Admob");
+				Log.d(TAG,"Init Admob");
 				getInstance(); 
 			
 				initAdmob();
@@ -105,24 +116,23 @@ public class AdMobEx extends Extension {
 	}
 
     static public void loadInterstitial() {
-        Log.d("AdMobEx","Load Interstitial Begin");
+        Log.d(TAG,"Load Interstitial Begin");
         if(interstitialId=="") return;
         mainActivity.runOnUiThread(new Runnable() {
             public void run() { reloadInterstitial();}
         });
 
-        Log.d("AdMobEx","Load Interstitial End");
+        Log.d(TAG,"Load Interstitial End");
     }
 
 	static public void showInterstitial() {
-		Log.d("AdMobEx","Show Interstitial Begin");
+		Log.d(TAG,"Show Interstitial Begin");
 		if(interstitialId=="") return;
 		mainActivity.runOnUiThread(new Runnable() {
 			public void run() {	if(interstitial.isLoaded()) interstitial.show();	}
 		});
-		Log.d("AdMobEx","Show Interstitial End");
+		Log.d(TAG,"Show Interstitial End");
 	}
-
 
 	static public void showBanner() {
 		if(bannerId=="") return;
@@ -133,7 +143,7 @@ public class AdMobEx extends Extension {
 			});
 			return;
 		}
-		Log.d("AdMobEx","Show Banner");
+		Log.d(TAG,"Show Banner");
 		
 		mainActivity.runOnUiThread(new Runnable() {
 			public void run() {
@@ -147,7 +157,6 @@ public class AdMobEx extends Extension {
 		});
 	}
 
-
 	static public void hideBanner() {
 		if(bannerId=="") return;
 		mustBeShowingBanner=false;
@@ -157,7 +166,7 @@ public class AdMobEx extends Extension {
 			});
 			return;
 		}
-		Log.d("AdMobEx","Hide Banner");
+		Log.d(TAG,"Hide Banner");
 
 		mainActivity.runOnUiThread(new Runnable() {
 			public void run() {
@@ -179,7 +188,7 @@ public class AdMobEx extends Extension {
 	}
 
 	static public void onResize(){
-		Log.d("AdMobEx","On Resize");
+		Log.d(TAG,"On Resize");
 		mainActivity.runOnUiThread(new Runnable() {
 			public void run() {
                 reinitBanner();
@@ -187,7 +196,7 @@ public class AdMobEx extends Extension {
 		});
 	}
 	
-	 static public void setBannerPosition(final String gravityMode)
+	static public void setBannerPosition(final String gravityMode)
     {
         mainActivity.runOnUiThread(new Runnable()
                                    {
@@ -224,25 +233,20 @@ public class AdMobEx extends Extension {
 	
 	
     static public void initAdmob(){
-        
         mainActivity.runOnUiThread(new Runnable()
         {
             public void run()
             {
                 MobileAds.initialize(mainActivity.getApplicationContext(), admobId);
-                Log.d("AdMobEx","Admob AppID: "+admobId);
-        
-                AdRequest.Builder builder = new AdRequest.Builder();
-        
+                Log.d(TAG,"Admob AppID: "+admobId);
+
                 if(testingAds){
                     String android_id = Secure.getString(mainActivity.getContentResolver(), Secure.ANDROID_ID);
-                    String deviceId = getInstance().md5(android_id).toUpperCase();
-                    Log.d("AdMobEx","DEVICE ID: "+deviceId);
-                    builder.addTestDevice(deviceId);
+                    deviceId = getInstance().md5(android_id).toUpperCase();
+                    Log.d(TAG,"DEVICE ID: "+deviceId);
                 }
-        
-                builder.addTestDevice(AdRequest.DEVICE_ID_EMULATOR);
-                adReq = builder.build();
+
+				buildAdReq(false);
         
                 if(bannerId!=""){
                     reinitBanner();
@@ -255,19 +259,19 @@ public class AdMobEx extends Extension {
                     public void onAdLoaded() {
                         loadingInterstitial=false;
                         callback.call("onAdmobInterstitialLoaded", new Object[] {});
-                        Log.d("AdMobEx","Received Interstitial!");
+                        Log.d(TAG,"Received Interstitial!");
                     }
                     public void onAdFailedToLoad(int errorcode) {
                         loadingInterstitial=false;
                         failInterstitial=true;
                         callback.call("onAdmobInterstitialFailed", new Object[] {});
 						//reloadInterstitial();
-                        Log.d("AdMobEx","Fail to get Interstitial: "+errorcode);
+                        Log.d(TAG,"Fail to get Interstitial: "+errorcode);
                     }
                     public void onAdClosed() {
                         //reloadInterstitial();
                         callback.call("onAdmobInterstitialClosed", new Object[] {});
-                        Log.d("AdMobEx","Dismiss Interstitial");
+                        Log.d(TAG,"Dismiss Interstitial");
                     }
                     public void onAdOpened(){
                         callback.call("onAdmobInterstitialOpened", new Object[] {});
@@ -279,10 +283,28 @@ public class AdMobEx extends Extension {
                  reloadInterstitial();
                  }
                 
+				getConsentInfo();
             }
         });
     }
     
+	public static void buildAdReq(boolean npa)
+	{
+		AdRequest.Builder builder = new AdRequest.Builder();
+		builder.addTestDevice(AdRequest.DEVICE_ID_EMULATOR);
+		if (testingAds)
+		{
+			builder.addTestDevice(deviceId);
+		}
+		if (npa)
+		{
+			Bundle extras = new Bundle();
+			extras.putString("npa", "1");
+			builder.addNetworkExtrasBundle(AdMobAdapter.class, extras);
+		}
+		adReq = builder.build();
+	}
+	
     static public void reinitBanner(){
         if(loadingBanner) return;
         if(banner==null){ // if this is the first time we call this function
@@ -302,7 +324,7 @@ public class AdMobEx extends Extension {
             public void onAdLoaded() {
                 loadingBanner=false;
                 callback.call("onAdmobBannerLoaded", new Object[] {});
-                Log.d("AdMobEx","Received Banner OK!");
+                Log.d(TAG,"Received Banner OK!");
                 if(mustBeShowingBanner){
                     showBanner();
                 }else{
@@ -313,7 +335,7 @@ public class AdMobEx extends Extension {
                 loadingBanner=false;
                 failBanner=true;
                 callback.call("onAdmobBannerFailed", new Object[] {});
-                Log.d("AdMobEx","Fail to get Banner: "+errorcode);
+                Log.d(TAG,"Fail to get Banner: "+errorcode);
             }
             public void onAdClosed(){
                 callback.call("onAdmobBannerClosed", new Object[] {});
@@ -335,7 +357,7 @@ public class AdMobEx extends Extension {
     public static void reloadInterstitial(){
         if(interstitialId=="") return;
         //if(loadingInterstitial) return;
-        Log.d("AdMobEx","Reload Interstitial");
+        Log.d(TAG,"Reload Interstitial");
         loadingInterstitial=true;
         interstitial.loadAd(adReq);
         failInterstitial=false;
@@ -344,7 +366,7 @@ public class AdMobEx extends Extension {
     static public void reloadBanner(){
         if(bannerId=="") return;
         if(loadingBanner) return;
-        Log.d("AdMobEx","Reload Banner");
+        Log.d(TAG,"Reload Banner");
         loadingBanner=true;
         banner.loadAd(adReq);
         failBanner=false;
@@ -361,5 +383,167 @@ public class AdMobEx extends Extension {
         }
         return "";
     }
+
+	public static void setPrivacyURL(final String pURL)
+	{
+		privacyURL = pURL;
+	}
 	
+	static public void getConsentInfo()
+	{
+		consentInformation = ConsentInformation.getInstance(mainContext);
+		String[] publisherIds = {admobId};
+		
+		if (testingAds)
+		{
+			consentInformation.addTestDevice(deviceId);
+			consentInformation.setDebugGeography(DebugGeography.DEBUG_GEOGRAPHY_EEA);
+		}
+
+		consentInformation.requestConsentInfoUpdate(publisherIds, new ConsentInfoUpdateListener()
+		{
+			@Override
+			public void onConsentInfoUpdated(ConsentStatus consentStatus)
+			{
+				if (consentInformation.isRequestLocationInEeaOrUnknown())
+				{
+					checkConsentStatus(consentStatus);
+				}
+				else
+				{
+					Log.d(TAG, "Player is outside EEA so no need check consent status");
+				}
+			}
+
+			@Override
+			public void onFailedToUpdateConsentInfo(String errorDescription)
+			{
+				Log.e(TAG, "Consent update failed with error: " + errorDescription);
+			}
+		});
+	}
+	
+	public static void checkConsentStatus(ConsentStatus consentStatus)
+	{
+		playerConsent = consentStatus;
+		
+		if (playerConsent == ConsentStatus.PERSONALIZED)
+		{
+			Log.d(TAG, "Player consents to personalized ads.");
+			buildAdReq(false);
+		}
+		else if (playerConsent == ConsentStatus.NON_PERSONALIZED)
+		{
+			Log.d(TAG, "Player consents to non-personalized ads.");
+			buildAdReq(true);
+		}
+		else if (playerConsent == ConsentStatus.UNKNOWN)
+		{
+			Log.d(TAG, "Consent status is unknown.");
+		}
+	}
+	
+	public static void showConsentForm(final boolean checkConsent)
+	{
+		if (checkConsent && !(playerConsent == ConsentStatus.UNKNOWN))
+		{
+			Log.d(TAG, "Skipping form because player already answered");
+			return;
+		}
+		
+        mainActivity.runOnUiThread(new Runnable()
+        {
+            public void run()
+            {
+				showWhenLoaded = true;
+				
+				if (formLoaded)
+				{
+					form.show();
+				}
+				else if (form != null)
+				{
+					form.load();
+				}
+				else
+				{
+					setupForm();
+				}
+			}
+		});
+	}
+	
+    static public void setupForm()
+	{
+		if (privacyURL == null || privacyURL.isEmpty())
+		{
+			Log.e(TAG, "Can't setup form with missing privacy URL");
+			return;
+		}
+		
+		consentInformation = ConsentInformation.getInstance(mainContext);
+		if (!consentInformation.isRequestLocationInEeaOrUnknown())
+		{
+			Log.d(TAG, "Player is outside EEA so no need to show form");
+			return;
+		}
+		
+        mainActivity.runOnUiThread(new Runnable()
+        {
+            public void run()
+            {
+				URL pUrl = null;
+				try
+				{
+					pUrl = new URL(privacyURL);
+				}
+				catch (MalformedURLException e)
+				{
+					Log.e(TAG, "Privacy URL is malformed.");
+					return;
+				}
+				form = new ConsentForm.Builder(mainContext, pUrl)
+					.withListener(new ConsentFormListener()
+					{
+						@Override
+						public void onConsentFormLoaded()
+						{
+							Log.d(TAG, "Consent form loaded.");
+							formLoaded = true;
+							if (showWhenLoaded)
+							{
+								form.show();
+							}
+						}
+
+						@Override
+						public void onConsentFormOpened()
+						{
+							Log.d(TAG, "Consent form opened.");
+							showWhenLoaded = false;
+						}
+
+						@Override
+						public void onConsentFormClosed(ConsentStatus consentStatus, Boolean userPrefersAdFree)
+						{
+							Log.d(TAG, "Consent form closed.");
+							formLoaded = false;
+							checkConsentStatus(consentStatus);
+						}
+
+						@Override
+						public void onConsentFormError(String errorDescription)
+						{
+							Log.e(TAG, "Consent form error: " + errorDescription);
+							formLoaded = false;
+						}
+					})
+					.withPersonalizedAdsOption()
+					.withNonPersonalizedAdsOption()
+					.build();
+					
+					form.load();
+			}
+		});
+    }
 }
