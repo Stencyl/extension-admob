@@ -392,7 +392,8 @@ public class AdMobEx extends Extension {
 	static public void getConsentInfo()
 	{
 		consentInformation = ConsentInformation.getInstance(mainContext);
-		String[] publisherIds = {admobId};
+		String pubID = admobId.split("~")[0];
+		String[] publisherIds = {pubID};
 		
 		if (testingAds)
 		{
@@ -445,7 +446,7 @@ public class AdMobEx extends Extension {
 	
 	public static void showConsentForm(final boolean checkConsent)
 	{
-		if (checkConsent && !(playerConsent == ConsentStatus.UNKNOWN))
+		if (checkConsent && (playerConsent == ConsentStatus.PERSONALIZED || playerConsent == ConsentStatus.NON_PERSONALIZED))
 		{
 			Log.d(TAG, "Skipping form because player already answered");
 			return;
