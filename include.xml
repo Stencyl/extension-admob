@@ -27,6 +27,8 @@
         <dependency name="CoreBluetooth.framework" />
         <dependency name="GLKit.framework" />
         <dependency name="CoreVideo.framework" />
+		
+		<assets path="consentform.html" />
 	</section>
 	
 </extension>

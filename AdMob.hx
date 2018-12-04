@@ -156,6 +156,8 @@ class AdMob {
 			__showInterstitial = cpp.Lib.load("admobex","admobex_interstitial_show",0);
 			__refresh = cpp.Lib.load("adMobEx","admobex_banner_refresh",0);
 			__setBannerPosition = cpp.Lib.load("admobex","admobex_banner_move",1);
+			__setPrivacyURL = cpp.Lib.load("admobex","admobex_setPrivacyURL",1);
+			__showConsentForm = cpp.Lib.load("admobex","admobex_showConsentForm",1);
 
 			__init(admobId,APIKeys.ioswhirlID,APIKeys.ioswhirlID1,gravityMode,Config.testAds);
 			set_event_handle(notifyListeners);
@@ -252,10 +254,6 @@ class AdMob {
 	
 	public static function setPrivacyURL(privacyURL:String)
 	{
-		#if ios
-		return; // ios portion will be added later
-		#end
-	
 		try{
 			__setPrivacyURL(privacyURL);
 		}catch(e:Dynamic){
@@ -265,10 +263,6 @@ class AdMob {
 	
 	public static function showConsentForm(checkConsent:Bool = true)
 	{
-		#if ios
-		return; // ios portion will be added later
-		#end
-	
 		try{
 			__showConsentForm(checkConsent);
 		}catch(e:Dynamic){

@@ -18,8 +18,12 @@
         <depend name="${HXCPP}/include/hx/CFFI.h"/>
         <compilerflag value="-IiPhone/include"/>
         <compilerflag value="-Iinclude"/>
-        <compilerflag value="-F../frameworks"/>
+        <compilerflag value="-F../frameworks/"/>
         <file name="ios/AdMobEx.mm" />
+		<file name="ios/PACConsentForm.m" />
+		<file name="ios/PACError.m" />
+		<file name="ios/PACPersonalizedAdConsent.m" />
+		<file name="ios/PACView.m" />
     </files>
     
     <files id="android">
