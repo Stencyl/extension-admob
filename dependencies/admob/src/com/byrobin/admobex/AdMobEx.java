@@ -246,7 +246,7 @@ public class AdMobEx extends Extension {
                     Log.d(TAG,"DEVICE ID: "+deviceId);
                 }
 
-				buildAdReq(false);
+				buildAdReq(true);
         
                 if(bannerId!=""){
                     reinitBanner();
@@ -298,9 +298,14 @@ public class AdMobEx extends Extension {
 		}
 		if (npa)
 		{
+			Log.d(TAG,"Building ad request for non-personalized ads.");
 			Bundle extras = new Bundle();
 			extras.putString("npa", "1");
 			builder.addNetworkExtrasBundle(AdMobAdapter.class, extras);
+		}
+		else
+		{
+			Log.d(TAG,"Building ad request for personalized ads.");
 		}
 		adReq = builder.build();
 	}
@@ -399,6 +404,7 @@ public class AdMobEx extends Extension {
 		{
 			consentInformation.addTestDevice(deviceId);
 			consentInformation.setDebugGeography(DebugGeography.DEBUG_GEOGRAPHY_EEA);
+			//consentInformation.setDebugGeography(DebugGeography.DEBUG_GEOGRAPHY_NOT_EEA);
 		}
 
 		consentInformation.requestConsentInfoUpdate(publisherIds, new ConsentInfoUpdateListener()
@@ -413,6 +419,7 @@ public class AdMobEx extends Extension {
 				else
 				{
 					Log.d(TAG, "Player is outside EEA so no need check consent status");
+					buildAdReq(false);
 				}
 			}
 
@@ -441,6 +448,7 @@ public class AdMobEx extends Extension {
 		else if (playerConsent == ConsentStatus.UNKNOWN)
 		{
 			Log.d(TAG, "Consent status is unknown.");
+			buildAdReq(true);
 		}
 	}
 	
