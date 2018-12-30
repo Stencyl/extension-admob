@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<palette>
+    
+    <!-- Core blocks -->
+    
+    <block tag="admob-initialize"
+           code="AdMob.init(~, ~);"
+           type="action"
+           returns="void"
+           category="mobile"
+           helpURL="game-mobile">
+        <fields>
+            <text order="0"></text>
+            <dropdown order="1">
+                <choices>
+                    <c text="@bottom" code="0"></c>
+                    <c text="@top" code="1"></c>
+                </choices>
+            </dropdown>
+        </fields>
+    </block>
+    
+    <block tag="admob-show-hide-banner"
+           code="AdMob.~Banner();"
+           type="action"
+           returns="void"
+           category="mobile"
+           helpURL="game-mobile">
+        <fields>
+            <dropdown order="0">
+                <choices>
+                    <c text="@show" code="show"></c>
+                    <c text="@hide" code="hide"></c>
+                </choices>
+            </dropdown>
+        </fields>
+    </block>
+    
+    <block tag="admob-show-fullscreen"
+           code="AdMob.~Interstitial();"
+           type="action"
+           returns="void"
+           category="mobile"
+           helpURL="game-mobile">
+        <fields>
+            <dropdown order="0">
+                <choices>
+                    <c text="@load" code="load"></c>
+                    <c text="@show" code="show"></c>
+                </choices>
+            </dropdown>
+        </fields>
+    </block>
+    
+    <block tag="admob-reinit-banner"
+           code="AdMob.onResize();"
+           type="action"
+           returns="void"
+           category="mobile"
+           helpURL="game-mobile">
+        <fields>
+        </fields>
+    </block>
+    
+    <block tag="admob-setbanner-position"
+           code="AdMob.setBannerPosition(~);"
+           type="action"
+           returns="void"
+           category="mobile"
+           helpURL="game-mobile">
+        <fields>
+            <dropdown order="0">
+                <choices>
+                    <c text="@bottom" code="0"></c>
+                    <c text="@top" code="1"></c>
+                </choices>
+            </dropdown>
+        </fields>
+    </block>
+
+    <block tag="admob-setPrivacyURL"
+           code="AdMob.setPrivacyURL(~);"
+           type="action"
+           returns="void"
+           category="mobile"
+           helpURL="game-mobile">
+        <fields>
+            <text order="0"></text>
+        </fields>
+    </block>
+	
+    <block tag="admob-showConsentForm"
+           code="AdMob.showConsentForm(~);"
+           type="action"
+           returns="void"
+           category="mobile"
+           helpURL="game-mobile">
+        <fields>
+            <dropdown order="0">
+                <choices>
+                    <c text="@consent-check-existing" code="true"></c>
+                    <c text="@consent-always-show" code="false"></c>
+                </choices>
+            </dropdown>
+        </fields>
+    </block>
+    
+</palette>
