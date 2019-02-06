@@ -266,7 +266,7 @@ public class AdMobEx extends Extension {
                         failInterstitial=true;
                         callback.call("onAdmobInterstitialFailed", new Object[] {});
 						//reloadInterstitial();
-                        Log.d(TAG,"Fail to get Interstitial: "+errorcode);
+                        Log.e(TAG,"Fail to get Interstitial: "+errorcode);
                     }
                     public void onAdClosed() {
                         //reloadInterstitial();
@@ -340,7 +340,7 @@ public class AdMobEx extends Extension {
                 loadingBanner=false;
                 failBanner=true;
                 callback.call("onAdmobBannerFailed", new Object[] {});
-                Log.d(TAG,"Fail to get Banner: "+errorcode);
+                Log.e(TAG,"Fail to get Banner: "+errorcode);
             }
             public void onAdClosed(){
                 callback.call("onAdmobBannerClosed", new Object[] {});
