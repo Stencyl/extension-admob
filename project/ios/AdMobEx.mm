@@ -95,7 +95,8 @@ extern "C" void sendEvent(const char* event);
     self = [super init];
     if(!self) return nil;
 
-    [GADMobileAds configureWithApplicationID:ID];
+    //[GADMobileAds configureWithApplicationID:ID]; DEPRECATED
+    [[GADMobileAds sharedInstance] startWithCompletionHandler:nil];
     
     return self;
 }

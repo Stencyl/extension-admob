@@ -3,15 +3,33 @@
     
     <!-- Core blocks -->
     
+    <!-- deprecated -->
     <block tag="admob-initialize"
-           code="AdMob.init(~, ~);"
+           code="AdMob.init(#1);"
+           type="action"
+           returns="void"
+           category="mobile"
+           helpURL="game-mobile"
+           hidden="true">
+        <fields>
+            <text order="0"></text>
+            <dropdown order="1">
+                <choices>
+                    <c text="@bottom" code="0"></c>
+                    <c text="@top" code="1"></c>
+                </choices>
+            </dropdown>
+        </fields>
+    </block>
+
+    <block tag="admob-initialize2"
+           code="AdMob.init(~);"
            type="action"
            returns="void"
            category="mobile"
            helpURL="game-mobile">
         <fields>
-            <text order="0"></text>
-            <dropdown order="1">
+            <dropdown order="0">
                 <choices>
                     <c text="@bottom" code="0"></c>
                     <c text="@top" code="1"></c>

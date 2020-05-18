@@ -134,8 +134,7 @@ class AdMob {
 		}
 	}
 	
-	public static function init(admobId:String, position:Int){
-	
+	public static function init(position:Int){
 		if(position == 1)
 		{
 			gravityMode = "TOP";
@@ -159,7 +158,7 @@ class AdMob {
 			__setPrivacyURL = cpp.Lib.load("admobex","admobex_setPrivacyURL",1);
 			__showConsentForm = cpp.Lib.load("admobex","admobex_showConsentForm",1);
 
-			__init(admobId,APIKeys.ioswhirlID,APIKeys.ioswhirlID1,gravityMode,Config.testAds);
+			__init(APIKeys.admobAppID,APIKeys.ioswhirlID,APIKeys.ioswhirlID1,gravityMode,Config.testAds);
 			set_event_handle(notifyListeners);
 		}catch(e:Dynamic){
 			trace("iOS INIT Exception: "+e);
@@ -187,7 +186,7 @@ class AdMob {
 	
 			var args = new Array<Dynamic>();
 			args.push(new AdMob());
-			args.push(admobId);
+			args.push(APIKeys.admobAppID);
 			args.push(APIKeys.whirlID);
 			args.push(APIKeys.whirlID1);
 			args.push(gravityMode);
