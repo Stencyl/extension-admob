@@ -1,5 +1,6 @@
 admob-initialize=initialize AdMob ads with app ID %0 (set banner position to %1) [i:mobile]
-admob-initialize.help=Initialize AdMob banner and/or fullscreen ads, use only once in your first scene. Set banner position if you are using banners. If you are only using fullscreen ads ignor banner position
+admob-initialize2=initialize AdMob ads (set banner position to %0) [i:mobile]
+admob-initialize2.help=Initialize AdMob banner and/or fullscreen ads, use only once in your first scene. Set banner position if you are using banners. If you are only using fullscreen ads ignor banner position
 admob-show-hide-banner=%0 AdMob banner ad [i:mobile]
 admob-show-hide-banner.help=Shows and hide the AdMob banner.
 admob-show-fullscreen=%0 AdMob fullscreen ad [i:mobile]
