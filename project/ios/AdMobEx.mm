@@ -227,6 +227,7 @@ static BannerListener *bannerListener;
     
 	GADRequest *request = [Consent buildAdReq];
     [bannerView loadRequest:request];
+    bannerView.translatesAutoresizingMaskIntoConstraints = NO;
     [root.view addSubview:bannerView];
     
     [bannerView setDelegate:self];
@@ -243,16 +244,77 @@ static BannerListener *bannerListener;
     
     if (bottom) // Reposition the adView to the bottom of the screen
     {
-        CGRect frame = bannerView.frame;
-        frame.origin.y = root.view.bounds.size.height - frame.size.height;
-        bannerView.frame=frame;
-        
+        if (@available(ios 11.0, *)) {
+            [self positionBannerViewAtBottomOfSafeArea];
+        } else {
+            [self positionBannerViewAtBottomOfView];
+        }
     }else // Reposition the adView to the top of the screen
     {
-        CGRect frame = bannerView.frame;
-        frame.origin.y = 0;
-        bannerView.frame=frame;
+        if (@available(ios 11.0, *)) {
+            [self positionBannerViewAtTopOfSafeArea];
+        } else {
+            [self positionBannerViewAtTopOfView];
+        }
     }
+}
+
+-(void)positionBannerViewAtTopOfSafeArea NS_AVAILABLE_IOS(11.0)
+{
+    // Position the banner. Stick it to the top of the Safe Area.
+    // Centered horizontally.
+    UILayoutGuide *guide = root.view.safeAreaLayoutGuide;
+    [NSLayoutConstraint activateConstraints:@[
+        [bannerView.centerXAnchor constraintEqualToAnchor:guide.centerXAnchor],
+        [bannerView.topAnchor constraintEqualToAnchor:guide.topAnchor]
+    ]];
+}
+
+-(void)positionBannerViewAtBottomOfSafeArea NS_AVAILABLE_IOS(11.0)
+{
+    // Position the banner. Stick it to the bottom of the Safe Area.
+    // Centered horizontally.
+    UILayoutGuide *guide = root.view.safeAreaLayoutGuide;
+    [NSLayoutConstraint activateConstraints:@[
+        [bannerView.centerXAnchor constraintEqualToAnchor:guide.centerXAnchor],
+        [bannerView.bottomAnchor constraintEqualToAnchor:guide.bottomAnchor]
+    ]];
+}
+
+-(void)positionBannerViewAtTopOfView
+{
+    [root.view addConstraint:[NSLayoutConstraint constraintWithItem:bannerView
+                                                          attribute:NSLayoutAttributeCenterX
+                                                          relatedBy:NSLayoutRelationEqual
+                                                             toItem:root.view
+                                                          attribute:NSLayoutAttributeCenterX
+                                                         multiplier:1
+                                                           constant:0]];
+    [root.view addConstraint:[NSLayoutConstraint constraintWithItem:bannerView
+                                                          attribute:NSLayoutAttributeTop
+                                                          relatedBy:NSLayoutRelationEqual
+                                                             toItem:root.topLayoutGuide
+                                                          attribute:NSLayoutAttributeBottom
+                                                         multiplier:1
+                                                           constant:0]];
+}
+
+-(void)positionBannerViewAtBottomOfView
+{
+    [root.view addConstraint:[NSLayoutConstraint constraintWithItem:bannerView
+                                                          attribute:NSLayoutAttributeCenterX
+                                                          relatedBy:NSLayoutRelationEqual
+                                                             toItem:root.view
+                                                          attribute:NSLayoutAttributeCenterX
+                                                         multiplier:1
+                                                           constant:0]];
+    [root.view addConstraint:[NSLayoutConstraint constraintWithItem:bannerView
+                                                          attribute:NSLayoutAttributeBottom
+                                                          relatedBy:NSLayoutRelationEqual
+                                                             toItem:root.bottomLayoutGuide
+                                                          attribute:NSLayoutAttributeTop
+                                                         multiplier:1
+                                                           constant:0]];
 }
 
 -(void)showBannerAd
