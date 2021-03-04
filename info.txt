@@ -1,0 +1,6 @@
+name=AdMob Extension
+description=Show ads using Google AdMob
+author=Robin Schaafsma
+website=http://www.stencyl.com
+version=1.0.0
+compatibility=mobile
