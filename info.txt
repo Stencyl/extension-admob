@@ -1,3 +1,4 @@
+id=com.stencyl.admob
 name=AdMob Extension
 description=Show ads using Google AdMob
 author=Robin Schaafsma
