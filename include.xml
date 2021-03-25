@@ -8,7 +8,6 @@
         <android extension="com.byrobin.admobex.AdMobEx" />
 	</section>
 	<section if="ios">
-		<ndll name="admobex" />
 		<dependency path="frameworks/GoogleAppMeasurement.framework" />
 		<dependency path="frameworks/GoogleMobileAds.framework" />
 		<dependency path="frameworks/GoogleUtilities.xcframework" />

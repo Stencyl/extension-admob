@@ -16,6 +16,9 @@ import openfl.utils.ByteArray;
 import openfl.display.BitmapData;
 import openfl.geom.Rectangle;
 
+#if ios
+@:buildXml('<include name="${haxelib:com.stencyl.admob}/project/Build.xml"/>')
+#end
 class AdMob {
 	
 	#if android
