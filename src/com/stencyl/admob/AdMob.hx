@@ -1,4 +1,4 @@
-package;
+package com.stencyl.admob;
 
 import openfl.Lib;
 
