@@ -3,27 +3,8 @@
     
     <!-- Core blocks -->
     
-    <!-- deprecated -->
-    <block tag="admob-initialize"
-           code="AdMob.init(#1);"
-           type="action"
-           returns="void"
-           category="mobile"
-           helpURL="game-mobile"
-           hidden="true">
-        <fields>
-            <text order="0"></text>
-            <dropdown order="1">
-                <choices>
-                    <c text="@bottom" code="0"></c>
-                    <c text="@top" code="1"></c>
-                </choices>
-            </dropdown>
-        </fields>
-    </block>
-
     <block tag="admob-initialize2"
-           code="AdMob.init(~);"
+           code="com.stencyl.admob.AdMob.init(~);"
            type="action"
            returns="void"
            category="mobile"
@@ -39,7 +20,7 @@
     </block>
     
     <block tag="admob-show-hide-banner"
-           code="AdMob.~Banner();"
+           code="com.stencyl.admob.AdMob.~Banner();"
            type="action"
            returns="void"
            category="mobile"
@@ -55,7 +36,7 @@
     </block>
     
     <block tag="admob-show-fullscreen"
-           code="AdMob.~Interstitial();"
+           code="com.stencyl.admob.AdMob.~Interstitial();"
            type="action"
            returns="void"
            category="mobile"
@@ -71,7 +52,7 @@
     </block>
     
     <block tag="admob-reinit-banner"
-           code="AdMob.onResize();"
+           code="com.stencyl.admob.AdMob.onResize();"
            type="action"
            returns="void"
            category="mobile"
@@ -81,7 +62,7 @@
     </block>
     
     <block tag="admob-setbanner-position"
-           code="AdMob.setBannerPosition(~);"
+           code="com.stencyl.admob.AdMob.setBannerPosition(~);"
            type="action"
            returns="void"
            category="mobile"
@@ -97,7 +78,7 @@
     </block>
 
     <block tag="admob-setPrivacyURL"
-           code="AdMob.setPrivacyURL(~);"
+           code="com.stencyl.admob.AdMob.setPrivacyURL(~);"
            type="action"
            returns="void"
            category="mobile"
@@ -108,7 +89,7 @@
     </block>
 	
     <block tag="admob-showConsentForm"
-           code="AdMob.showConsentForm(~);"
+           code="com.stencyl.admob.AdMob.showConsentForm(~);"
            type="action"
            returns="void"
            category="mobile"
@@ -121,6 +102,75 @@
                 </choices>
             </dropdown>
         </fields>
+    </block>
+
+    <block tag="iad-height"
+           code="(Engine.landscape ? 32 : 50)"
+           type="normal"
+           returns="int"
+           category="mobile"
+           helpURL="game-mobile">
+    </block>
+
+    <!-- deprecated blocks -->
+
+    <block tag="admob-initialize"
+           code="com.stencyl.admob.AdMob.init(#1);"
+           type="action"
+           returns="void"
+           category="mobile"
+           helpURL="game-mobile"
+           hidden="true"
+           deprecated="true">
+        <fields>
+            <text order="0"></text>
+            <dropdown order="1">
+                <choices>
+                    <c text="@bottom" code="0"></c>
+                    <c text="@top" code="1"></c>
+                </choices>
+            </dropdown>
+        </fields>
+    </block>
+
+    <block tag="iad-load-show"
+           code="~MobileAd();"
+           type="action"
+           returns="void"
+           category="mobile"
+           helpURL="game-mobile"
+           deprecated="true">
+        <fields>
+            <dropdown order="0">
+                <choices>
+                    <c text="@block.load" code="loadFull" />
+                    <c text="@block.show" code="showFull" />
+                </choices>
+            </dropdown>
+        </fields>
+        <context>
+            <requiredContext type="staticimport" value="com.stencyl.behavior.Script" />
+        </context>
+    </block>
+
+    <block tag="iad-show-hide"
+           code="~MobileAd();"
+           type="action"
+           returns="void"
+           category="mobile"
+           helpURL="game-mobile"
+           deprecated="true">
+        <fields>
+            <dropdown order="0">
+                <choices>
+                    <c text="@block.hide" code="hide" />
+                    <c text="@block.show" code="show" />
+                </choices>
+            </dropdown>
+        </fields>
+        <context>
+            <requiredContext type="staticimport" value="com.stencyl.behavior.Script" />
+        </context>
     </block>
     
 </palette>
