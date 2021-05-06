@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<stencyl-addons>
+
+	<events-addon target="stencyl-behavior-events">
+		<merge-section id="mobile.monetization">
+			<event block="event-mobile-ads" menuText="@events.defs.ads" description="@events.defs.ads" icon="ad" menuIcon="ad" />
+		</merge-section>
+	</events-addon>
+
+	<palette-addon target="stencyl-behavior-palette">
+		<merge-section id="game.mobile">
+			<header title="@events.defs.ads" icon="question" action="help:iads" />
+	        <block tag="admob-initialize2" />
+	        <block tag="admob-show-hide-banner" />
+	        <block tag="admob-show-fullscreen" />
+	        <block tag="admob-reinit-banner" />
+	        <block tag="admob-setbanner-position" />
+			<block tag="iad-height" />
+			<block tag="admob-setPrivacyURL" />
+			<block tag="admob-showConsentForm" />
+		</merge-section>
+	</palette-addon>
+
+	<property-page-addon target="dashboard.sidebar">
+		<header label="@mobile.settings.money.admob"/>
+		<field name="enableAdmobAds" />
+		<field name="enableTestAds" />
+
+		<header label="@mobile.settings.money.admob.ios" />
+		<field name="iosAppID" label="@fields.appID.label" editor="SingleLine" />
+		<field name="iosBannerKey" label="@fields.bannerKey.label" editor="SingleLine" />
+		<field name="iosInterstitialKey" label="@fields.interstitialKey.label" editor="SingleLine" />
+
+		<header label="@mobile.settings.money.admob.android" />
+		<field name="androidAppID" label="@fields.appID.label" editor="SingleLine" />
+		<field name="androidBannerKey" label="@fields.bannerKey.label" editor="SingleLine" />
+		<field name="androidInterstitialKey" label="@fields.interstitialKey.label" editor="SingleLine" />
+	</property-page-addon>
+
+</stencyl-addons>

@@ -1,11 +1,11 @@
 #deprecated
-iad-height=hauteur de l'iAd [i:mobile]
+iad-height=hauteur de l'iAd [c:mobile]
 iad-height.help=Hauteur de l'iPub (iAds), change selon le Portrait ou le Paysage.
 
-iad-load-show=%0 iAd plein écran [i:mobile]
+iad-load-show=%0 iAd plein écran [c:mobile]
 iad-load-show.help=Charge/Cache les iPubs en plein écran.
 
-iad-show-hide=%0 iAd [i:mobile]
+iad-show-hide=%0 iAd [c:mobile]
 iad-show-hide.help=Montre ou Cache les iPubs (iADs).
 
 block.load=charger

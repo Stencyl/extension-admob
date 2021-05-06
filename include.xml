@@ -1,15 +1,46 @@
 <?xml version="1.0" encoding="utf-8"?>
 <extension>
-	<section if="${showAdmobAds}">
+
+	<!-- [doc]
+		An extension include.xml WILL NOT RUN if the compatibility flag set in info.txt doesn't match the platform the game is being built for.
+
+		The variables we're passed in an extension include.xml:
+		- NOT expected to be used by extensions, may be removed
+			- stencylInstall: the path to the install folder of Stencyl
+			- stencylWorkspace: the path to the workspace folder of Stencyl
+			- androidBuildsPath: the path to where gradle builds android projects
+			- cppia:
+		- telemetry
+		- publishing
+		- testing
+	-->
+	<section if="${enableAdmobAds}">
 		<source path="src" />
 		
 		<section if="android">
+			<log error="To enable ads in your game, your AdMob Application Identifier must be set." unless="${androidAppID}" />
+			<setenv name="ADMOB_APP_ID" value="${androidAppID}" />
+
 	        <dependency name="admob" path="dependencies/admob" />
 	        
 	        <android extension="com.byrobin.admobex.AdMobEx" />
 		</section>
 
 		<section if="ios">
+			<!-- xcframeworks are not supported before Xcode 11 -->
+			<!-- [todo] make logged errors show up as error dialogs in Stencyl, parse it as lang string if it starts with @, pass xcode version from Stencyl -->
+			<!-- [doc] you can show errors at build time in Stencyl by using log error, but having validation for your fields, if possible, would be better, because stencyl can catch the error and direct the user to the gui to fix it before attempting to build the game -->
+			<log error="To run your game with ads enabled, you must update Xcode to version 11 or later." if="${xcodeVersion < 11}" />
+
+			<log error="To enable ads in your game, your AdMob Application Identifier must be set." unless="${iosAppID}" />
+			<!-- [doc] include values are accessed as ${fieldName}. Document various ways you can use them in conditions. Do we need to use setenv here to preserve the value until template processing time? If so, document that. -->
+			<setenv name="ADMOB_APP_ID" value="${iosAppID}" />
+
+			<assets path="consentform.html" />
+			<!-- [doc] template can be used to include files in the generated project, in some cases to override existing files, and in this case, to merge into the primary Info.plist file. -->
+			<template path="templates" />
+
+			<!-- [todo] mechanism for automatically retrieving and linking in frameworks -->
 			<dependency path="frameworks/GoogleAppMeasurement.framework" />
 			<dependency path="frameworks/GoogleMobileAds.framework" />
 			<dependency path="frameworks/GoogleUtilities.xcframework" />
@@ -37,7 +68,7 @@
 	        <dependency name="UIKit.framework" />
 	        <dependency name="WebKit.framework" />
 	        
-			<assets path="consentform.html" />
+			<config:ios linker-flags="-ObjC" />
 		</section>
 
 	</section>

@@ -1,8 +1,47 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<palette>
+<blocks>
+    
+    <!-- Events -->
+    
+    <block tag="event-mobile-ads"
+           type="event"
+           returns="void"
+           category="events"
+           helpURL="event-mobile">
+        <code>
+            <event-def params="" innercode="#1" listener="addMobileAdListener(#0, ${eventRef});" />
+        </code>
+        <fields>
+            <dropdown order="0">
+                <choices>
+                    <c text="@event.mobile.ads.viewed" code="100" />
+                    <c text="@event.mobile.ads.closed" code="101" />
+                    <c text="@event.mobile.ads.loaded" code="102" />
+                    <c text="@event.mobile.ads.failed" code="103" />
+                    <c text="@event.mobile.ads.clicked" code="104" />
+                    <c text="@event.mobile.fullads.viewed" code="105" />
+                    <c text="@event.mobile.fullads.closed" code="106" />
+                    <c text="@event.mobile.fullads.loaded" code="107" />
+                    <c text="@event.mobile.fullads.failed" code="108" />
+                    <c text="@event.mobile.fullads.clicked" code="109" />
+                </choices>
+            </dropdown>
+            <code-block order="1" />
+        </fields>
+        <context>
+            <innerContext type="class" value="com.stencyl.behavior.Script" />
+        </context>
+    </block>
     
     <!-- Core blocks -->
     
+    <dropdown id="topbottom">
+        <choices>
+            <c text="@bottom" code="0" />
+            <c text="@top" code="1" />
+        </choices>
+    </dropdown>
+
     <block tag="admob-initialize2"
            code="com.stencyl.admob.AdMob.init(~);"
            type="action"
@@ -10,12 +49,7 @@
            category="mobile"
            helpURL="game-mobile">
         <fields>
-            <dropdown order="0">
-                <choices>
-                    <c text="@bottom" code="0"></c>
-                    <c text="@top" code="1"></c>
-                </choices>
-            </dropdown>
+            <dropdown order="0" id="topbottom" />
         </fields>
     </block>
     
@@ -28,8 +62,8 @@
         <fields>
             <dropdown order="0">
                 <choices>
-                    <c text="@show" code="show"></c>
-                    <c text="@hide" code="hide"></c>
+                    <c text="@show" code="show" />
+                    <c text="@hide" code="hide" />
                 </choices>
             </dropdown>
         </fields>
@@ -44,8 +78,8 @@
         <fields>
             <dropdown order="0">
                 <choices>
-                    <c text="@load" code="load"></c>
-                    <c text="@show" code="show"></c>
+                    <c text="@load" code="load" />
+                    <c text="@show" code="show" />
                 </choices>
             </dropdown>
         </fields>
@@ -68,12 +102,7 @@
            category="mobile"
            helpURL="game-mobile">
         <fields>
-            <dropdown order="0">
-                <choices>
-                    <c text="@bottom" code="0"></c>
-                    <c text="@top" code="1"></c>
-                </choices>
-            </dropdown>
+            <dropdown order="0" id="topbottom" />
         </fields>
     </block>
 
@@ -84,7 +113,7 @@
            category="mobile"
            helpURL="game-mobile">
         <fields>
-            <text order="0"></text>
+            <text order="0" />
         </fields>
     </block>
 	
@@ -97,8 +126,8 @@
         <fields>
             <dropdown order="0">
                 <choices>
-                    <c text="@consent-check-existing" code="true"></c>
-                    <c text="@consent-always-show" code="false"></c>
+                    <c text="@consent-check-existing" code="true" />
+                    <c text="@consent-always-show" code="false" />
                 </choices>
             </dropdown>
         </fields>
@@ -123,13 +152,8 @@
            hidden="true"
            deprecated="true">
         <fields>
-            <text order="0"></text>
-            <dropdown order="1">
-                <choices>
-                    <c text="@bottom" code="0"></c>
-                    <c text="@top" code="1"></c>
-                </choices>
-            </dropdown>
+            <text order="0" />
+            <dropdown order="1" id="topbottom" />
         </fields>
     </block>
 
@@ -139,6 +163,7 @@
            returns="void"
            category="mobile"
            helpURL="game-mobile"
+           hidden="true"
            deprecated="true">
         <fields>
             <dropdown order="0">
@@ -159,6 +184,7 @@
            returns="void"
            category="mobile"
            helpURL="game-mobile"
+           hidden="true"
            deprecated="true">
         <fields>
             <dropdown order="0">
@@ -173,4 +199,4 @@
         </context>
     </block>
     
-</palette>
+</blocks>

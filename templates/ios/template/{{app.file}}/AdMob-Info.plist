@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plist version="1.0">
+<dict>
+	::if (ENV_ADMOB_APP_ID != null)::<key>GADApplicationIdentifier</key>
+	<string>::ENV_ADMOB_APP_ID::</string>::end::
+</dict>
+</plist>

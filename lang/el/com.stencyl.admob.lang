@@ -1,8 +1,8 @@
 #deprecated
-iad-height=ύψος της iAd [i:mobile]
+iad-height=ύψος της iAd [c:mobile]
 iad-height.help=Ύψος της iAd - αλλάζει βάση του portrait/landscape
 
-iad-show-hide=%0 iAd [i:mobile]
+iad-show-hide=%0 iAd [c:mobile]
 iad-show-hide.help=Προβολή/Απόκρυψη iAds
 
 block.show=Προβολή

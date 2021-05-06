@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<game-data>
+
+	<include>
+		<field name="enableAdmobAds" type="boolean" />
+		<field name="iosAppID"       type="text" />
+		<field name="androidAppID"   type="text" />
+	</include>
+
+	<config classname="com.stencyl.admob.AdmobConfig">
+		<field name="enableTestAds"          type="boolean" />
+		<field name="iosBannerKey"           type="text" embedded="true" />
+		<field name="iosInterstitialKey"     type="text" embedded="true" />
+		<field name="androidBannerKey"       type="text" embedded="true" />
+		<field name="androidInterstitialKey" type="text" embedded="true" />
+	</config>
+
+</game-data>

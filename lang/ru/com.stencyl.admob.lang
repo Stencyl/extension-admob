@@ -1,8 +1,8 @@
 #deprecated
-iad-height=высота iAd [i:mobile]
+iad-height=высота iAd [c:mobile]
 iad-height.help=Высота iAd – её изменения зависят от портретной/ландшафтной ориентации экрана.
 
-iad-show-hide=%0 iAd [i:mobile]
+iad-show-hide=%0 iAd [c:mobile]
 iad-show-hide.help=Покаывает/скрывает iAds
 
 block.show=Показать
