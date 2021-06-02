@@ -5,7 +5,7 @@
     
     <!-- deprecated -->
     <block tag="admob-initialize"
-           code="AdMob.init(#1);"
+           code="com.stencyl.admob.AdMob.init(#1);"
            type="action"
            returns="void"
            category="mobile"
@@ -23,7 +23,7 @@
     </block>
 
     <block tag="admob-initialize2"
-           code="AdMob.init(~);"
+           code="com.stencyl.admob.AdMob.init(~);"
            type="action"
            returns="void"
            category="mobile"
@@ -39,7 +39,7 @@
     </block>
     
     <block tag="admob-show-hide-banner"
-           code="AdMob.~Banner();"
+           code="com.stencyl.admob.AdMob.~Banner();"
            type="action"
            returns="void"
            category="mobile"
@@ -55,7 +55,7 @@
     </block>
     
     <block tag="admob-show-fullscreen"
-           code="AdMob.~Interstitial();"
+           code="com.stencyl.admob.AdMob.~Interstitial();"
            type="action"
            returns="void"
            category="mobile"
@@ -71,7 +71,7 @@
     </block>
     
     <block tag="admob-reinit-banner"
-           code="AdMob.onResize();"
+           code="com.stencyl.admob.AdMob.onResize();"
            type="action"
            returns="void"
            category="mobile"
@@ -81,7 +81,7 @@
     </block>
     
     <block tag="admob-setbanner-position"
-           code="AdMob.setBannerPosition(~);"
+           code="com.stencyl.admob.AdMob.setBannerPosition(~);"
            type="action"
            returns="void"
            category="mobile"
@@ -97,7 +97,7 @@
     </block>
 
     <block tag="admob-setPrivacyURL"
-           code="AdMob.setPrivacyURL(~);"
+           code="com.stencyl.admob.AdMob.setPrivacyURL(~);"
            type="action"
            returns="void"
            category="mobile"
@@ -108,7 +108,7 @@
     </block>
 	
     <block tag="admob-showConsentForm"
-           code="AdMob.showConsentForm(~);"
+           code="com.stencyl.admob.AdMob.showConsentForm(~);"
            type="action"
            returns="void"
            category="mobile"
