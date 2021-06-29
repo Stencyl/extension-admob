@@ -18,6 +18,8 @@ import openfl.geom.Rectangle;
 
 #if ios
 @:buildXml('<include name="${haxelib:com.stencyl.admob}/project/Build.xml"/>')
+//This is just here to prevent the otherwise indirectly referenced native code from bring stripped at link time.
+@:cppFileCode('extern "C" int admobex_register_prims();void com_stencyl_admobex_link(){admobex_register_prims();}')
 #end
 class AdMob {
 	
@@ -149,6 +151,7 @@ class AdMob {
 		#if ios
 		if(initialized) return;
 		initialized = true;
+
 		try{
 			// CPP METHOD LINKING
 			__init = cpp.Lib.load("adMobEx","admobex_init",5);
