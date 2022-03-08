@@ -191,7 +191,9 @@ public class AdMobEx extends Extension {
 		Log.d(TAG,"On Resize");
 		mainActivity.runOnUiThread(new Runnable() {
 			public void run() {
-                reinitBanner();
+                if(!bannerId.isEmpty()){
+                    reinitBanner();
+                }
             }
 		});
 	}
