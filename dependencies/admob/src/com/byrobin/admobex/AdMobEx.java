@@ -117,7 +117,7 @@ public class AdMobEx extends Extension {
 
     static public void loadInterstitial() {
         Log.d(TAG,"Load Interstitial Begin");
-        if(interstitialId=="") return;
+        if(interstitialId.isEmpty()) return;
         mainActivity.runOnUiThread(new Runnable() {
             public void run() { reloadInterstitial();}
         });
@@ -127,7 +127,7 @@ public class AdMobEx extends Extension {
 
 	static public void showInterstitial() {
 		Log.d(TAG,"Show Interstitial Begin");
-		if(interstitialId=="") return;
+		if(interstitialId.isEmpty()) return;
 		mainActivity.runOnUiThread(new Runnable() {
 			public void run() {	if(interstitial.isLoaded()) interstitial.show();	}
 		});
@@ -135,7 +135,7 @@ public class AdMobEx extends Extension {
 	}
 
 	static public void showBanner() {
-		if(bannerId=="") return;
+		if(bannerId.isEmpty()) return;
 		mustBeShowingBanner=true;
 		if(failBanner){
 			mainActivity.runOnUiThread(new Runnable() {
@@ -158,7 +158,7 @@ public class AdMobEx extends Extension {
 	}
 
 	static public void hideBanner() {
-		if(bannerId=="") return;
+		if(bannerId.isEmpty()) return;
 		mustBeShowingBanner=false;
 		if(failBanner){
 			mainActivity.runOnUiThread(new Runnable() {
@@ -248,11 +248,11 @@ public class AdMobEx extends Extension {
 
 				buildAdReq(true);
         
-                if(bannerId!=""){
+                if(!bannerId.isEmpty()){
                     reinitBanner();
                 }
         
-                if(interstitialId!=""){
+                if(!interstitialId.isEmpty()){
                  interstitial = new InterstitialAd(mainActivity);
                  interstitial.setAdUnitId(interstitialId);
                  interstitial.setAdListener(new AdListener() {
@@ -360,7 +360,7 @@ public class AdMobEx extends Extension {
     }
     
     public static void reloadInterstitial(){
-        if(interstitialId=="") return;
+        if(interstitialId.isEmpty()) return;
         //if(loadingInterstitial) return;
         Log.d(TAG,"Reload Interstitial");
         loadingInterstitial=true;
@@ -369,7 +369,7 @@ public class AdMobEx extends Extension {
     }
     
     static public void reloadBanner(){
-        if(bannerId=="") return;
+        if(bannerId.isEmpty()) return;
         if(loadingBanner) return;
         Log.d(TAG,"Reload Banner");
         loadingBanner=true;
