@@ -23,12 +23,13 @@
   <file name="common/ExternalInterface.cpp" />
 </files>
 
+<cocoapod name="Google-Mobile-Ads-SDK" version="7.68.0" />
+
 <files id="${id}-ios" dir="${this_dir}">
   <depend files="${id}-dependencies" />
   <cache value="1" project="${id}" asLibrary="true" />
   <compilerflag value="-I${this_dir}/include" />
-  <compilerflag value="-F${this_dir}/../frameworks/" />
-  <compilerflag name="-framework" value="GoogleMobileAds" />
+  <compilerflag value="-F${cocoapod:Google-Mobile-Ads-SDK.frameworks.GoogleMobileAds.active_slice.dir}" />
   <file name="ios/AdMobEx.mm" />
   <file name="ios/PACConsentForm.m" />
   <file name="ios/PACError.m" />
