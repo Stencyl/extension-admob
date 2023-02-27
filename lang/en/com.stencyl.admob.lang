@@ -1,0 +1,82 @@
+# blocks
+
+admob-initialize2=initialize AdMob ads (set banner position to %0) [c:mobile]
+admob-initialize2.help=Initialize AdMob banner and/or fullscreen ads, use only once in your first scene. Set banner position if you are using banners. If you are only using fullscreen ads ignor banner position
+
+admob-show-hide-banner=%0 AdMob banner ad [c:mobile]
+admob-show-hide-banner.help=Shows and hide the AdMob banner.
+
+admob-show-fullscreen=%0 AdMob fullscreen ad [c:mobile]
+admob-show-fullscreen.help=Load/Show AdMob fullscreen ads
+
+admob-reinit-banner=reinitialize AdMob banner [c:mobile]
+admob-reinit-banner.help=Reinitialize Admob banner.
+
+admob-setbanner-position=move banner to %0 [c:mobile]
+admob-setbanner-position.help=Move banner position.
+
+admob-setPrivacyURL=set privacy policy URL to %0 [c:mobile]
+admob-setPrivacyURL.help=Set your privacy policy URL that is used by the consent SDK.
+
+admob-showConsentForm=show consent form %0 [c:mobile]
+admob-showConsentForm.help=Show the consent form (will only appear to players in the EEA).
+
+# events
+
+event-mobile-ads=when %0 [c:ad]
+event-mobile-ads.help=When ads are shown.
+
+# block dropdowns
+
+bottom=bottom
+top=top
+show=show
+hide=hide
+load=load
+consent-check-existing=check existing consent
+consent-always-show=always show
+event.mobile.ads.viewed=a banner ad is showing
+event.mobile.ads.closed=a banner ad is closed
+event.mobile.ads.loaded=the banner ad area loads
+event.mobile.ads.failed=the banner ad area fails to load
+event.mobile.ads.clicked=the banner ad area is clicked
+event.mobile.fullads.viewed=a fullscreen ad is showing
+event.mobile.fullads.closed=a fullscreen ad is closed
+event.mobile.fullads.loaded=the fullscreen ad area loads
+event.mobile.fullads.failed=the fullscreen ad area fails to load
+event.mobile.fullads.clicked=the fullscreen ad area is clicked
+
+events.defs.ads=Ads
+
+# gui
+
+mobile.settings.money.admob=AdMob Ads
+
+fields.enableAdmobAds.label=Enable Admob Ads
+fields.enableAdmobAds.hint=To use Admob in your game, you must enable Admob first. If it's disabled the blocks and Testads will not be working.
+
+fields.enableTestAds.label=Enable Test Ads
+
+mobile.settings.money.admob.ios=AdMob Ads - iOS
+mobile.settings.money.admob.android=AdMob Ads - Android
+
+fields.appID.label=AdMob Application Identifier
+fields.bannerKey.label=AdMob Banner Key
+fields.interstitialKey.label=AdMob Interstitial Key
+
+# deprecated
+
+admob-initialize=initialize AdMob ads with app ID %0 (set banner position to %1) [c:mobile]
+
+iad-height=height of mobile ad [c:mobile]
+iad-height.help=Height of the Mobile banner Ads - it changes based on portrait/landscape
+
+iad-load-show=%0 mobile fullscreen ad [c:mobile]
+iad-load-show.help=Load/Hide Fullscreen MobileAds
+
+iad-show-hide=%0 mobile banner ad [c:mobile]
+iad-show-hide.help=Show/Hide Banner MobileAds
+
+block.load=load
+block.show=show
+block.hide=hide

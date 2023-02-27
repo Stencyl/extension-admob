@@ -1,0 +1,9 @@
+#deprecated
+iad-height=largura do iAd [c:mobile]
+iad-height.help=Largura do iAd - muda conforme a orientação do ecrã
+
+iad-show-hide=%0 iAd [c:mobile]
+iad-show-hide.help=Mostrar/Esconder iAds
+
+block.show=Mostrar
+block.hide=Esconder

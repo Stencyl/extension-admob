@@ -1,0 +1,9 @@
+#deprecated
+iad-height=altezza mobile ad [c:mobile]
+iad-height.help=Altezza di iAd - cambia in base se portrait/landscape
+
+iad-show-hide=%0 mobile ad [c:mobile]
+iad-show-hide.help=Mostra/Nascondi iAds
+
+block.show=Mostra
+block.hide=Nascondi

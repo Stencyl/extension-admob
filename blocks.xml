@@ -1,26 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<palette>
+<blocks>
     
     <!-- Core blocks -->
     
-    <!-- deprecated -->
-    <block tag="admob-initialize"
-           code="com.stencyl.admob.AdMob.init(#1);"
-           type="action"
-           returns="void"
-           category="mobile"
-           helpURL="game-mobile"
-           hidden="true">
-        <fields>
-            <text order="0"></text>
-            <dropdown order="1">
-                <choices>
-                    <c text="@bottom" code="0"></c>
-                    <c text="@top" code="1"></c>
-                </choices>
-            </dropdown>
-        </fields>
-    </block>
+    <dropdown id="topbottom">
+        <choices>
+            <c text="@bottom" code="0" />
+            <c text="@top" code="1" />
+        </choices>
+    </dropdown>
 
     <block tag="admob-initialize2"
            code="com.stencyl.admob.AdMob.init(~);"
@@ -29,12 +17,7 @@
            category="mobile"
            helpURL="game-mobile">
         <fields>
-            <dropdown order="0">
-                <choices>
-                    <c text="@bottom" code="0"></c>
-                    <c text="@top" code="1"></c>
-                </choices>
-            </dropdown>
+            <dropdown order="0" id="topbottom" />
         </fields>
     </block>
     
@@ -47,8 +30,8 @@
         <fields>
             <dropdown order="0">
                 <choices>
-                    <c text="@show" code="show"></c>
-                    <c text="@hide" code="hide"></c>
+                    <c text="@show" code="show" />
+                    <c text="@hide" code="hide" />
                 </choices>
             </dropdown>
         </fields>
@@ -63,8 +46,8 @@
         <fields>
             <dropdown order="0">
                 <choices>
-                    <c text="@load" code="load"></c>
-                    <c text="@show" code="show"></c>
+                    <c text="@load" code="load" />
+                    <c text="@show" code="show" />
                 </choices>
             </dropdown>
         </fields>
@@ -87,12 +70,7 @@
            category="mobile"
            helpURL="game-mobile">
         <fields>
-            <dropdown order="0">
-                <choices>
-                    <c text="@bottom" code="0"></c>
-                    <c text="@top" code="1"></c>
-                </choices>
-            </dropdown>
+            <dropdown order="0" id="topbottom" />
         </fields>
     </block>
 
@@ -103,7 +81,7 @@
            category="mobile"
            helpURL="game-mobile">
         <fields>
-            <text order="0"></text>
+            <text order="0" />
         </fields>
     </block>
 	
@@ -116,11 +94,77 @@
         <fields>
             <dropdown order="0">
                 <choices>
-                    <c text="@consent-check-existing" code="true"></c>
-                    <c text="@consent-always-show" code="false"></c>
+                    <c text="@consent-check-existing" code="true" />
+                    <c text="@consent-always-show" code="false" />
                 </choices>
             </dropdown>
         </fields>
     </block>
+
+    <block tag="iad-height"
+           code="(Engine.landscape ? 32 : 50)"
+           type="normal"
+           returns="int"
+           category="mobile"
+           helpURL="game-mobile">
+    </block>
+
+    <!-- deprecated blocks -->
+
+    <block tag="admob-initialize"
+           code="com.stencyl.admob.AdMob.init(#1);"
+           type="action"
+           returns="void"
+           category="mobile"
+           helpURL="game-mobile"
+           hidden="true"
+           deprecated="true">
+        <fields>
+            <text order="0" />
+            <dropdown order="1" id="topbottom" />
+        </fields>
+    </block>
+
+    <block tag="iad-load-show"
+           code="~MobileAd();"
+           type="action"
+           returns="void"
+           category="mobile"
+           helpURL="game-mobile"
+           hidden="true"
+           deprecated="true">
+        <fields>
+            <dropdown order="0">
+                <choices>
+                    <c text="@block.load" code="loadFull" />
+                    <c text="@block.show" code="showFull" />
+                </choices>
+            </dropdown>
+        </fields>
+        <context>
+            <requiredContext type="staticimport" value="com.stencyl.behavior.Script" />
+        </context>
+    </block>
+
+    <block tag="iad-show-hide"
+           code="~MobileAd();"
+           type="action"
+           returns="void"
+           category="mobile"
+           helpURL="game-mobile"
+           hidden="true"
+           deprecated="true">
+        <fields>
+            <dropdown order="0">
+                <choices>
+                    <c text="@block.hide" code="hide" />
+                    <c text="@block.show" code="show" />
+                </choices>
+            </dropdown>
+        </fields>
+        <context>
+            <requiredContext type="staticimport" value="com.stencyl.behavior.Script" />
+        </context>
+    </block>
     
-</palette>
+</blocks>
