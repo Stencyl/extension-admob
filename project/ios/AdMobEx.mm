@@ -547,7 +547,7 @@ namespace admobex {
     static NSString *interstitialID;
     
 	void init(const char *__AdmobID, const char *__BannerID, const char *__InterstitialID, const char *gravityMode, bool testingAds){
-        NSString *admobID = [NSString stringWithUTF8String:__AdmobID];
+        NSString *admobID = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"GADApplicationIdentifier"];
         NSString *GMODE = [NSString stringWithUTF8String:gravityMode];
         NSString *bannerID = [NSString stringWithUTF8String:__BannerID];
         interstitialID = [NSString stringWithUTF8String:__InterstitialID];

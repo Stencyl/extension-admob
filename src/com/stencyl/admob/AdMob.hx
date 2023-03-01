@@ -164,7 +164,7 @@ class AdMob {
 			__setPrivacyURL = cpp.Lib.load("admobex","admobex_setPrivacyURL",1);
 			__showConsentForm = cpp.Lib.load("admobex","admobex_showConsentForm",1);
 
-			__init(AdmobConfig.iosAppID,AdmobConfig.iosBannerKey,AdmobConfig.iosInterstitialKey,gravityMode,AdmobConfig.enableTestAds);
+			__init("",AdmobConfig.iosBannerKey,AdmobConfig.iosInterstitialKey,gravityMode,AdmobConfig.enableTestAds);
 			set_event_handle(notifyListeners);
 		}catch(e:Dynamic){
 			trace("iOS INIT Exception: "+e);
@@ -194,7 +194,7 @@ class AdMob {
 	
 			var args = new Array<Dynamic>();
 			args.push(new AdMob());
-			args.push(AdmobConfig.androidAppID);
+			args.push("");
 			args.push(AdmobConfig.androidBannerKey);
 			args.push(AdmobConfig.androidInterstitialKey);
 			args.push(gravityMode);
