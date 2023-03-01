@@ -8,36 +8,39 @@ import lime.system.JNI;
 
 import com.stencyl.Config;
 import com.stencyl.Engine;
-import com.stencyl.event.EventMaster;
-import com.stencyl.event.StencylEvent;
+import com.stencyl.Extension;
+import com.stencyl.event.Event;
 
-import openfl.utils.ByteArray;
-import openfl.display.BitmapData;
-import openfl.geom.Rectangle;
+using com.stencyl.event.EventDispatcher;
 
 #if ios
 @:buildXml('<include name="${haxelib:com.stencyl.admob}/project/Build.xml"/>')
 //This is just here to prevent the otherwise indirectly referenced native code from bring stripped at link time.
 @:cppFileCode('extern "C" int admobex_register_prims();void com_stencyl_admobex_link(){admobex_register_prims();}')
 #end
-class AdMob {
-	
-	#if android
-	private function new() {}
-	#end
+class AdMob extends Extension
+{
+	public function new()
+	{
+		super();
+		instance = this;
+	}
 
+	public static function get()
+	{
+		return instance;
+	}
+
+	public var adEvent:Event<(AdEventData)->Void> = new Event<(AdEventData)->Void>();
+	public var nativeEventQueue:Array<AdEventData> = [];
+	
 	private static var initialized:Bool=false;
+	private static var instance:AdMob;
 	private static var testingAds:Bool=false;
 	private static var gravityMode:String;
 
 	///////////////////////////////////////////////////////////////////////////
-	#if ios
-	private static var __init:String->String->String->String->Bool->Void = function(admobId:String, bannerId:String, interstitialId:String, gravityMode:String, testingAds:Bool){};
-	private static var set_event_handle = cpp.Lib.load("adMobEx", "ads_set_event_handle", 1);
-	#end
-	#if android
-	private static var _init_func:Dynamic;
-	#end
+	
 	private static var __showBanner:Void->Void = function(){};
 	private static var __hideBanner:Void->Void = function(){};
 	private static var __loadInterstitial:Void->Void = function(){};
@@ -64,60 +67,58 @@ class AdMob {
 		if(data == "banneropen")
 		{
 			trace("USER OPENED BANNER");
-			Engine.events.addAdEvent(new StencylEvent(StencylEvent.AD_USER_OPEN));
+			instance.nativeEventQueue.push(AdEvent(BANNER, OPENED));
 		}
 		
 		if(data == "bannerclose")
 		{
 			trace("USER CLOSED BANNER");
-			Engine.events.addAdEvent(new StencylEvent(StencylEvent.AD_USER_CLOSE));
+			instance.nativeEventQueue.push(AdEvent(BANNER, CLOSED));
 		}
 		
 		if(data == "bannerload")
 		{
 			trace("BANNER SHOWED UP");
-			
-			Engine.events.addAdEvent(new StencylEvent(StencylEvent.AD_LOADED));
+			instance.nativeEventQueue.push(AdEvent(BANNER, LOADED));
 		}
 		
 		if(data == "bannerfail")
 		{
 			trace("BANNER FAILED TO LOAD");
-			Engine.events.addAdEvent(new StencylEvent(StencylEvent.AD_FAILED));
+			instance.nativeEventQueue.push(AdEvent(BANNER, FAILED_TO_LOAD));
 		}
 		if(data == "bannerclicked")
 		{
 			trace("BANNER IS CLICKED");
-			Engine.events.addAdEvent(new StencylEvent(StencylEvent.AD_CLICKED));
+			instance.nativeEventQueue.push(AdEvent(BANNER, CLICKED));
 		}
 		if(data == "interstitialopen")
 		{
 			trace("USER OPENED INTERSTITIAL");
-			Engine.events.addAdEvent(new StencylEvent(StencylEvent.FULL_AD_USER_OPEN));
+			instance.nativeEventQueue.push(AdEvent(INTERSTITIAL, OPENED));
 		}
 		
 		if(data == "interstitialclose")
 		{
 			trace("USER CLOSED INTERSTITIAL");
-			Engine.events.addAdEvent(new StencylEvent(StencylEvent.FULL_AD_USER_CLOSE));
+			instance.nativeEventQueue.push(AdEvent(INTERSTITIAL, CLOSED));
 		}
 		
 		if(data == "interstitialload")
 		{
 			trace("INTERSTITIAL SHOWED UP");
-			
-			Engine.events.addAdEvent(new StencylEvent(StencylEvent.FULL_AD_LOADED));
+			instance.nativeEventQueue.push(AdEvent(INTERSTITIAL, LOADED));
 		}
 		
 		if(data == "interstitialfail")
 		{
 			trace("INTERSTITIAL FAILED TO LOAD");
-			Engine.events.addAdEvent(new StencylEvent(StencylEvent.FULL_AD_FAILED));
+			instance.nativeEventQueue.push(AdEvent(INTERSTITIAL, FAILED_TO_LOAD));
 		}
 		if(data == "interstitialclicked")
 		{
 			trace("INTERSTITIAL IS CLICKED");
-			Engine.events.addAdEvent(new StencylEvent(StencylEvent.FULL_AD_CLICKED));
+			instance.nativeEventQueue.push(AdEvent(INTERSTITIAL, CLICKED));
 		}
 	}
 	#end
@@ -147,14 +148,15 @@ class AdMob {
 			gravityMode = "BOTTOM";
 		}
 	
-		#if ios
 		if(initialized) return;
 		initialized = true;
 		AdmobConfig.load();
 
+		#if ios
 		try{
 			// CPP METHOD LINKING
-			__init = cpp.Lib.load("adMobEx","admobex_init",5);
+			var __init = cpp.Lib.load("adMobEx","admobex_init",5);
+			var set_event_handle = cpp.Lib.load("adMobEx", "ads_set_event_handle", 1);
 			__showBanner = cpp.Lib.load("adMobEx","admobex_banner_show",0);
 			__hideBanner = cpp.Lib.load("adMobEx","admobex_banner_hide",0);
 			__loadInterstitial = cpp.Lib.load("admobex","admobex_interstitial_load",0);
@@ -172,10 +174,6 @@ class AdMob {
 		#end
 		
 		#if android
-		if(initialized) return;
-		initialized = true;
-		AdmobConfig.load();
-		
 		try{
 			// JNI METHOD LINKING
 			__showBanner = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "showBanner", "()V");
@@ -187,13 +185,10 @@ class AdMob {
 			__setPrivacyURL = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "setPrivacyURL", "(Ljava/lang/String;)V");
 			__showConsentForm = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "showConsentForm", "(Z)V");
 
-			if(_init_func == null)
-			{
-				_init_func = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "init", "(Lorg/haxe/lime/HaxeObject;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Z)V", true);
-			}
+			var _init_func = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "init", "(Lorg/haxe/lime/HaxeObject;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Z)V", true);
 	
 			var args = new Array<Dynamic>();
-			args.push(new AdMob());
+			args.push(instance);
 			args.push("");
 			args.push(AdmobConfig.androidBannerKey);
 			args.push(AdmobConfig.androidInterstitialKey);
@@ -209,7 +204,7 @@ class AdMob {
 	public static function showBanner() {
 		try {
 			__showBanner();
-			Engine.events.addAdEvent(new StencylEvent(StencylEvent.AD_USER_OPEN));
+			instance.nativeEventQueue.push(AdEvent(BANNER, OPENED));
 		} catch(e:Dynamic) {
 			trace("ShowAd Exception: "+e);
 		}
@@ -218,7 +213,7 @@ class AdMob {
 	public static function hideBanner() {
 		try {
 			__hideBanner();
-			Engine.events.addAdEvent(new StencylEvent(StencylEvent.AD_USER_CLOSE));
+			instance.nativeEventQueue.push(AdEvent(BANNER, CLOSED));
 		} catch(e:Dynamic) {
 			trace("HideAd Exception: "+e);
 		}
@@ -282,60 +277,86 @@ class AdMob {
 	public function onAdmobBannerClosed() 
 	{
 		trace("USER CLOSED BANNER");
-		Engine.events.addAdEvent(new StencylEvent(StencylEvent.AD_USER_CLOSE));
+		nativeEventQueue.push(AdEvent(BANNER, CLOSED));
 	}
 			
 	public function onAdmobBannerOpened() 
 	{
 		trace("USER OPENED BANNER");
-		Engine.events.addAdEvent(new StencylEvent(StencylEvent.AD_USER_OPEN));
+		nativeEventQueue.push(AdEvent(BANNER, OPENED));
 	}
 	
 	public function onAdmobBannerLoaded() 
 	{		
 		trace("BANNER SHOWED UP");
-		Engine.events.addAdEvent(new StencylEvent(StencylEvent.AD_LOADED));
+		nativeEventQueue.push(AdEvent(BANNER, LOADED));
 	}		
 	
 	public function onAdmobBannerFailed() 
 	{
 		trace("BANNER FAILED TO LOAD");
-		Engine.events.addAdEvent(new StencylEvent(StencylEvent.AD_FAILED));
+		nativeEventQueue.push(AdEvent(BANNER, FAILED_TO_LOAD));
 	}
 	
 	public function onAdmobBannerClicked() 
 	{
 		trace("BANNER IS CLICKED");
-		Engine.events.addAdEvent(new StencylEvent(StencylEvent.AD_CLICKED));
+		nativeEventQueue.push(AdEvent(BANNER, CLICKED));
 	}
 	
 	public function onAdmobInterstitialClosed() 
 	{
 		trace("USER CLOSED INTERSTITIAL");
-		Engine.events.addAdEvent(new StencylEvent(StencylEvent.FULL_AD_USER_CLOSE));
+		nativeEventQueue.push(AdEvent(INTERSTITIAL, CLOSED));
 	}
 			
 	public function onAdmobInterstitialOpened() 
 	{
 		trace("USER OPENED INTERSTITIAL");
-		Engine.events.addAdEvent(new StencylEvent(StencylEvent.FULL_AD_USER_OPEN));
+		nativeEventQueue.push(AdEvent(INTERSTITIAL, OPENED));
 	}
 	
 	public function onAdmobInterstitialLoaded() 
 	{		
 		trace("INTERSTITIAL SHOWED UP");
-		Engine.events.addAdEvent(new StencylEvent(StencylEvent.FULL_AD_LOADED));
+		nativeEventQueue.push(AdEvent(INTERSTITIAL, LOADED));
 	}		
 	
 	public function onAdmobInterstitialFailed() 
 	{
 		trace("INTERSTITIAL FAILED TO LOAD");
-		Engine.events.addAdEvent(new StencylEvent(StencylEvent.FULL_AD_FAILED));
+		nativeEventQueue.push(AdEvent(INTERSTITIAL, FAILED_TO_LOAD));
 	}
 	public function onAdmobInterstitialClicked() 
 	{
 		trace("INTERSTITIAL IS CLICKED");
-		Engine.events.addAdEvent(new StencylEvent(StencylEvent.FULL_AD_CLICKED));
+		nativeEventQueue.push(AdEvent(INTERSTITIAL, CLICKED));
 	}
 	#end
+
+	public override function preSceneUpdate()
+	{
+		for(event in nativeEventQueue)
+		{
+			adEvent.dispatch(event);
+		}
+		nativeEventQueue.splice(0, nativeEventQueue.length);
+	}
+}
+
+enum AdEventData {
+	AdEvent(adType:AdType, adEventType:AdEventType);
+}
+
+enum AdType {
+	BANNER;
+	INTERSTITIAL;
+}
+
+enum AdEventType {
+	OPENED;
+	CLOSED;
+	LOADED;
+	FAILED_TO_LOAD;
+	CLICKED;
 }

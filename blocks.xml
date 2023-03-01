@@ -1,6 +1,42 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <blocks>
     
+    <!-- Events -->
+    
+    <block tag="event-mobile-ads"
+           type="event"
+           returns="void"
+           category="events"
+           helpURL="event-mobile">
+        <code>
+            <event-def
+                listener="addListener(com.stencyl.admob.AdMob.get().adEvent, ${eventRef});"
+                params="adEvent:com.stencyl.admob.AdMob.AdEventData"
+                condition="#0"
+                innerCode="#1"  />
+        </code>
+        <fields>
+            <dropdown order="0">
+                <choices>
+                    <c text="@event.mobile.ads.viewed" code="Type.enumEq(adEvent, AdEvent(BANNER, OPENED))" />
+                    <c text="@event.mobile.ads.closed" code="Type.enumEq(adEvent, AdEvent(BANNER, CLOSED))" />
+                    <c text="@event.mobile.ads.loaded" code="Type.enumEq(adEvent, AdEvent(BANNER, LOADED))" />
+                    <c text="@event.mobile.ads.failed" code="Type.enumEq(adEvent, AdEvent(BANNER, FAILED_TO_LOAD))" />
+                    <c text="@event.mobile.ads.clicked" code="Type.enumEq(adEvent, AdEvent(BANNER, CLICKED))" />
+                    <c text="@event.mobile.fullads.viewed" code="Type.enumEq(adEvent, AdEvent(INTERSTITIAL, OPENED))" />
+                    <c text="@event.mobile.fullads.closed" code="Type.enumEq(adEvent, AdEvent(INTERSTITIAL, CLOSED))" />
+                    <c text="@event.mobile.fullads.loaded" code="Type.enumEq(adEvent, AdEvent(INTERSTITIAL, LOADED))" />
+                    <c text="@event.mobile.fullads.failed" code="Type.enumEq(adEvent, AdEvent(INTERSTITIAL, FAILED_TO_LOAD))" />
+                    <c text="@event.mobile.fullads.clicked" code="Type.enumEq(adEvent, AdEvent(INTERSTITIAL, CLICKED))" />
+                </choices>
+            </dropdown>
+            <code-block order="1" />
+        </fields>
+        <context>
+            <innerContext type="class" value="com.stencyl.behavior.Script" />
+        </context>
+    </block>
+    
     <!-- Core blocks -->
     
     <dropdown id="topbottom">
