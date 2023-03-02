@@ -46,6 +46,76 @@
         </choices>
     </dropdown>
 
+    <block tag="admob-setDebugGeography"
+           code="com.stencyl.admob.AdMob.setDebugGeography(&quot;~&quot;);"
+           type="action"
+           returns="void"
+           category="mobile"
+           helpURL="game-mobile">
+        <fields>
+            <dropdown order="0">
+                <choices>
+                    <c text="@debugGeography.eea"      code="eea" />
+                    <c text="@debugGeography.not_eea"  code="not_eea" />
+                    <c text="@debugGeography.disabled" code="" />
+                </choices>
+            </dropdown>
+        </fields>
+    </block>
+
+    <block tag="admob-setChildDirectedTreatment"
+           code="com.stencyl.admob.AdMob.setChildDirectedTreatment(&quot;~&quot;);"
+           type="action"
+           returns="void"
+           category="mobile"
+           helpURL="game-mobile">
+        <fields>
+            <dropdown order="0">
+                <choices>
+                    <c text="@true"        code="true" />
+                    <c text="@false"       code="false" />
+                    <c text="@unspecified" code="" />
+                </choices>
+            </dropdown>
+        </fields>
+    </block>
+
+    <block tag="admob-setUnderAgeOfConsent"
+           code="com.stencyl.admob.AdMob.setUnderAgeOfConsent(&quot;~&quot;);"
+           type="action"
+           returns="void"
+           category="mobile"
+           helpURL="game-mobile">
+        <fields>
+            <dropdown order="0">
+                <choices>
+                    <c text="@true"        code="true" />
+                    <c text="@false"       code="false" />
+                    <c text="@unspecified" code="" />
+                </choices>
+            </dropdown>
+        </fields>
+    </block>
+
+    <block tag="admob-setMaxAdContentRating"
+           code="com.stencyl.admob.AdMob.setMaxAdContentRating(&quot;~&quot;);"
+           type="action"
+           returns="void"
+           category="mobile"
+           helpURL="game-mobile">
+        <fields>
+            <dropdown order="0">
+                <choices>
+                    <c text="@rating.g"    code="g" />
+                    <c text="@rating.pg"   code="pg" />
+                    <c text="@rating.t"    code="t" />
+                    <c text="@rating.ma"   code="ma" />
+                    <c text="@unspecified" code="" />
+                </choices>
+            </dropdown>
+        </fields>
+    </block>
+
     <block tag="admob-initialize2"
            code="com.stencyl.admob.AdMob.init(~);"
            type="action"

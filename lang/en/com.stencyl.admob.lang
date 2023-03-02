@@ -18,6 +18,15 @@ admob-setbanner-position.help=Move banner position.
 admob-showConsentForm=show consent form %0 [c:mobile]
 admob-showConsentForm.help=Show the consent form (will only appear to players in the EEA).
 
+admob-setDebugGeography=set AdMob debug geography to %0 [c:mobile]
+admob-setDebugGeography.help=A debug geography can be specified to test consent forms in another region
+admob-setChildDirectedTreatment=set AdMob child-directed tag to %0 [c:mobile]
+admob-setChildDirectedTreatment.help=Set the child-directed treatment tag. This overrides the setting in the online AdMob dashboard.
+admob-setUnderAgeOfConsent=set AdMob "under age of consent" tag to %0 [c:mobile]
+admob-setUnderAgeOfConsent.help=Set the "under age of consent" tag. This overrides the setting in the online AdMob dashboard.
+admob-setMaxAdContentRating=set AdMob max ad content rating to %0 [c:mobile]
+admob-setMaxAdContentRating.help=Set the max ad content rating. This overrides the setting in the online AdMob dashboard.
+
 # events
 
 event-mobile-ads=when %0 [c:ad]
@@ -30,6 +39,16 @@ top=top
 show=show
 hide=hide
 load=load
+debugGeography.eea=in the eea
+debugGeography.not_eea=not in the eea
+debugGeography.disabled=disabled
+rating.g=g
+rating.pg=pg
+rating.t=t
+rating.ma=ma
+true=true
+false=false
+unspecified=unspecified
 consent-check-existing=check existing consent
 consent-always-show=always show
 event.mobile.ads.viewed=a banner ad is showing

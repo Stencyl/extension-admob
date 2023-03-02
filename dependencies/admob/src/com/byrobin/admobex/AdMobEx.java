@@ -13,6 +13,7 @@ import org.haxe.lime.HaxeObject;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import android.os.Bundle;
 import android.os.Handler;
@@ -67,6 +68,60 @@ public class AdMobEx extends Extension {
 	private static ConsentForm consentForm;
 	private static boolean showWhenLoaded = false;
 
+	//////////////////////////////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////////////////////////////
+
+	private static int debugGeography = -1;
+	private static int childDirected = RequestConfiguration.TAG_FOR_CHILD_DIRECTED_TREATMENT_UNSPECIFIED;
+	private static int underAgeOfConsent = RequestConfiguration.TAG_FOR_UNDER_AGE_OF_CONSENT_UNSPECIFIED;
+	private static String maxAdContentRating = RequestConfiguration.MAX_AD_CONTENT_RATING_UNSPECIFIED;
+
+	public static void setDebugGeography(String id)
+	{
+		switch(id)
+		{
+			case "eea": debugGeography = ConsentDebugSettings.DebugGeography.DEBUG_GEOGRAPHY_EEA; break;
+			case "not_eea": debugGeography = ConsentDebugSettings.DebugGeography.DEBUG_GEOGRAPHY_NOT_EEA; break;
+			case "disabled": debugGeography = ConsentDebugSettings.DebugGeography.DEBUG_GEOGRAPHY_DISABLED; break;
+			default: debugGeography = -1;
+		}
+	}
+
+	public static void setTagForChildDirectedTreatment(String id)
+	{
+		switch(id)
+		{
+			case "true": childDirected = RequestConfiguration.TAG_FOR_CHILD_DIRECTED_TREATMENT_TRUE; break;
+			case "false": childDirected = RequestConfiguration.TAG_FOR_CHILD_DIRECTED_TREATMENT_FALSE; break;
+			default: childDirected = RequestConfiguration.TAG_FOR_CHILD_DIRECTED_TREATMENT_UNSPECIFIED;
+		}
+	}
+
+	public static void setTagForUnderAgeOfConsent(String id)
+	{
+		switch(id)
+		{
+			case "true": underAgeOfConsent = RequestConfiguration.TAG_FOR_UNDER_AGE_OF_CONSENT_TRUE; break;
+			case "false": underAgeOfConsent = RequestConfiguration.TAG_FOR_UNDER_AGE_OF_CONSENT_FALSE; break;
+			default: underAgeOfConsent = RequestConfiguration.TAG_FOR_UNDER_AGE_OF_CONSENT_UNSPECIFIED;
+		}
+	}
+
+	public static void setMaxAdContentRating(String maxAdContentRating)
+	{
+		switch(maxAdContentRating)
+		{
+			case RequestConfiguration.MAX_AD_CONTENT_RATING_G:
+			case RequestConfiguration.MAX_AD_CONTENT_RATING_PG:
+			case RequestConfiguration.MAX_AD_CONTENT_RATING_T:
+			case RequestConfiguration.MAX_AD_CONTENT_RATING_MA:
+				AdMobEx.maxAdContentRating = maxAdContentRating;
+				break;
+			default:
+				AdMobEx.maxAdContentRating = RequestConfiguration.MAX_AD_CONTENT_RATING_UNSPECIFIED;
+		}
+	}
+	
 	//////////////////////////////////////////////////////////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -324,6 +379,9 @@ public class AdMobEx extends Extension {
 		RequestConfiguration requestConfiguration = MobileAds.getRequestConfiguration()
 			.toBuilder()
 			.setTestDeviceIds(testDeviceIds)
+			.setTagForChildDirectedTreatment(childDirected)
+			.setTagForUnderAgeOfConsent(underAgeOfConsent)
+			.setMaxAdContentRating(maxAdContentRating)
 			.build();
 		MobileAds.setRequestConfiguration(requestConfiguration);
 	}
@@ -459,21 +517,44 @@ public class AdMobEx extends Extension {
 		});
 	}
 
+	static public void getConsentInfo()
+	{
+		int consentStatus = UserMessagingPlatform.getConsentInformation(mainContext).getConsentStatus();
+		if (consentStatus == ConsentInformation.ConsentStatus.OBTAINED)
+		{
+			Log.d(TAG, "Skipping form because player already answered");
+			consentChecked = true;
+			return;
+		}
+
+		mainActivity.runOnUiThread(new Runnable()
+		{
+			public void run()
+			{
+				showWhenLoaded = false;
+				setupForm();
+			}
+		});
+	}
+
 	static public void setupForm()
 	{
 		ConsentRequestParameters.Builder paramsBuilder = new ConsentRequestParameters.Builder();
 		if (testingAds)
 		{
 			ConsentDebugSettings debugSettings = new ConsentDebugSettings.Builder(mainContext)
-				.setDebugGeography(ConsentDebugSettings.DebugGeography.DEBUG_GEOGRAPHY_EEA)
-				//.setDebugGeography(ConsentDebugSettings.DebugGeography.DEBUG_GEOGRAPHY_NOT_EEA)
+				.setDebugGeography(debugGeography)
 				.addTestDeviceHashedId(deviceId)
 				.build();
 			paramsBuilder.setConsentDebugSettings(debugSettings);
 		}
+		if (underAgeOfConsent != RequestConfiguration.TAG_FOR_UNDER_AGE_OF_CONSENT_UNSPECIFIED)
+		{
+			boolean value = (underAgeOfConsent == RequestConfiguration.TAG_FOR_UNDER_AGE_OF_CONSENT_TRUE);
+			paramsBuilder.setTagForUnderAgeOfConsent(value);
+		}
 		ConsentRequestParameters params = paramsBuilder
 			.setAdMobAppId(admobId)
-			.setTagForUnderAgeOfConsent(false)
 			.build();
 
 		ConsentInformation consentInformation = UserMessagingPlatform.getConsentInformation(mainContext);
@@ -500,26 +581,6 @@ public class AdMobEx extends Extension {
 					Log.e(TAG, "Consent update failed with error: " + formError.getMessage());
 				}
 			});
-	}
-	
-	static public void getConsentInfo()
-	{
-		int consentStatus = UserMessagingPlatform.getConsentInformation(mainContext).getConsentStatus();
-		if (checkConsent && consentStatus == ConsentInformation.ConsentStatus.OBTAINED)
-		{
-			Log.d(TAG, "Skipping form because player already answered");
-			consentChecked = true;
-			return;
-		}
-
-		mainActivity.runOnUiThread(new Runnable()
-		{
-			public void run()
-			{
-				showWhenLoaded = false;
-				setupForm();
-			}
-		});
 	}
 
 	public static void loadForm() {

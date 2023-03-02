@@ -71,6 +71,30 @@ static value admobex_showConsentForm(value checkConsent){
 }
 DEFINE_PRIM(admobex_showConsentForm,1);
 
+static value admobex_setDebugGeography(value debugGeography){
+    setDebugGeography(val_string(debugGeography));
+    return alloc_null();
+}
+DEFINE_PRIM(admobex_setDebugGeography,1);
+
+static value admobex_setTagForChildDirectedTreatment(value tag){
+    setTagForChildDirectedTreatment(val_string(tag));
+    return alloc_null();
+}
+DEFINE_PRIM(admobex_setTagForChildDirectedTreatment,1);
+
+static value admobex_setTagForUnderAgeOfConsent(value tag){
+    setTagForUnderAgeOfConsent(val_string(tag));
+    return alloc_null();
+}
+DEFINE_PRIM(admobex_setTagForUnderAgeOfConsent,1);
+
+static value admobex_setMaxAdContentRating(value rating){
+    setMaxAdContentRating(val_string(rating));
+    return alloc_null();
+}
+DEFINE_PRIM(admobex_setMaxAdContentRating,1);
+
 #endif
 
 extern "C" void admobex_main () {

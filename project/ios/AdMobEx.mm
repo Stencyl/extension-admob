@@ -77,6 +77,8 @@ extern "C" void sendAdEvent(const char* adType, const char* adEventType);
 + (BOOL)getTesting;
 + (void)setTesting:(BOOL)newTesting;
 
++ (void)setDebugGeography:(UMPDebugGeography)newDebugGeography;
+
 + (void)showConsentForm:(BOOL)checkConsent;
 + (void)setupForm;
 + (NSString*)admobDeviceID;
@@ -414,6 +416,8 @@ static BOOL testing = NO;
 static BOOL showWhenLoaded = NO;
 static BOOL consentChecked = NO;
 static UMPConsentForm* consentForm;
+static BOOL debugGeographySpecified = NO;
+static UMPDebugGeography debugGeography;
 
 + (NSString*)getPublisherID
 {
@@ -434,6 +438,12 @@ static UMPConsentForm* consentForm;
 + (void)setTesting:(BOOL)newTesting
 {
 	testing = newTesting;
+}
+
++ (void)setDebugGeography:(UMPDebugGeography)newDebugGeography
+{
+    debugGeography = newDebugGeography;
+    debugGeographySpecified = YES;
 }
 
 + (void)showConsentForm:(BOOL)checkConsent
@@ -466,7 +476,8 @@ static UMPConsentForm* consentForm;
     if(testing)
     {
         UMPDebugSettings* debugSettings = [[UMPDebugSettings alloc] init];
-        debugSettings.geography = UMPDebugGeographyEEA;
+        if(debugGeographySpecified)
+            debugSettings.geography = debugGeography;
         debugSettings.testDeviceIdentifiers = @[[self admobDeviceID]];
         parameters.debugSettings = debugSettings;
     }
@@ -651,5 +662,39 @@ namespace admobex {
     void showConsentForm(bool checkConsent)
     {
 		[Consent showConsentForm:checkConsent];
+    }
+
+    void setDebugGeography(const char *value)
+    {
+        if     (strcmp(value, "eea")      == 0) [Consent setDebugGeography:UMPDebugGeographyEEA];
+        else if(strcmp(value, "not_eea")  == 0) [Consent setDebugGeography:UMPDebugGeographyNotEEA];
+        else if(strcmp(value, "disabled") == 0) [Consent setDebugGeography:UMPDebugGeographyDisabled];
+        //do nothing for ""
+    }
+
+    void setTagForChildDirectedTreatment(const char *value)
+    {
+        GADRequestConfiguration* requestConfig = [GADMobileAds.sharedInstance requestConfiguration];
+        if     (strcmp(value, "true")  == 0) [requestConfig tagForChildDirectedTreatment:true];
+        else if(strcmp(value, "false") == 0) [requestConfig tagForChildDirectedTreatment:false];
+        //do nothing for ""
+    }
+
+    void setTagForUnderAgeOfConsent(const char *value)
+    {
+        GADRequestConfiguration* requestConfig = [GADMobileAds.sharedInstance requestConfiguration];
+        if     (strcmp(value, "true")  == 0) [requestConfig tagForUnderAgeOfConsent:true];
+        else if(strcmp(value, "false") == 0) [requestConfig tagForUnderAgeOfConsent:false];
+        //do nothing for ""
+    }
+
+    void setMaxAdContentRating(const char *value)
+    {
+        GADRequestConfiguration* requestConfig = [GADMobileAds.sharedInstance requestConfiguration];
+        if     (strcmp(value, "G")  == 0) [requestConfig setMaxAdContentRating:GADMaxAdContentRatingGeneral];
+        else if(strcmp(value, "PG") == 0) [requestConfig setMaxAdContentRating:GADMaxAdContentRatingParentalGuidance];
+        else if(strcmp(value, "T")  == 0) [requestConfig setMaxAdContentRating:GADMaxAdContentRatingTeen];
+        else if(strcmp(value, "MA") == 0) [requestConfig setMaxAdContentRating:GADMaxAdContentRatingMatureAudience];
+        //do nothing for ""
     }
 }

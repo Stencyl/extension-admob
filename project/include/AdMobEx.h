@@ -13,6 +13,10 @@ namespace admobex {
     void loadInterstitial();
 	void showInterstitial();
 	void showConsentForm(bool checkConsent);
+    void setDebugGeography(const char *value);
+    void setTagForChildDirectedTreatment(const char *value);
+    void setTagForUnderAgeOfConsent(const char *value);
+    void setMaxAdContentRating(const char *value);
 }
 
 

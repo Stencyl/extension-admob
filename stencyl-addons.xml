@@ -17,6 +17,10 @@
 	        <block tag="admob-setbanner-position" />
 			<block tag="iad-height" />
 			<block tag="admob-showConsentForm" />
+			<block tag="admob-setDebugGeography" />
+			<block tag="admob-setChildDirectedTreatment" />
+			<block tag="admob-setUnderAgeOfConsent" />
+			<block tag="admob-setMaxAdContentRating" />
 		</merge-section>
 	</palette-addon>
 

@@ -49,6 +49,10 @@ class AdMob extends Extension
 	private static var __refresh:Void->Void = function(){};
 	private static var __setBannerPosition:String->Void = function(gravityMode:String){};
 	private static var __showConsentForm:Bool->Void = function(checkConsent:Bool){};
+	private static var __setDebugGeography:String->Void = function(value:String){};
+	private static var __setChildDirectedTreatment:String->Void = function(value:String){};
+	private static var __setUnderAgeOfConsent:String->Void = function(value:String){};
+	private static var __setMaxAdContentRating:String->Void = function(value:String){};
 	
 	////////////////////////////////////////////////////////////////////////////
 
@@ -98,6 +102,10 @@ class AdMob extends Extension
 			__refresh = cpp.Lib.load("adMobEx","admobex_banner_refresh",0);
 			__setBannerPosition = cpp.Lib.load("admobex","admobex_banner_move",1);
 			__showConsentForm = cpp.Lib.load("admobex","admobex_showConsentForm",1);
+			__setDebugGeography = cpp.Lib.load("admobex","admobex_setDebugGeography",1);
+			__setChildDirectedTreatment = cpp.Lib.load("admobex","admobex_setTagForChildDirectedTreatment",1);
+			__setUnderAgeOfConsent = cpp.Lib.load("admobex","admobex_setTagForUnderAgeOfConsent",1);
+			__setMaxAdContentRating = cpp.Lib.load("admobex","admobex_setMaxAdContentRating",1);
 
 			__init("",AdmobConfig.iosBannerKey,AdmobConfig.iosInterstitialKey,gravityMode,AdmobConfig.enableTestAds);
 			set_ad_event_handle(onAdmobAdEvent);
@@ -116,6 +124,10 @@ class AdMob extends Extension
 			__onResize = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "onResize", "()V");
 			__setBannerPosition = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "setBannerPosition", "(Ljava/lang/String;)V");
 			__showConsentForm = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "showConsentForm", "(Z)V");
+			__setDebugGeography = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "setDebugGeography", "(Ljava/lang/String;)V");
+			__setChildDirectedTreatment = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "setTagForChildDirectedTreatment", "(Ljava/lang/String;)V");
+			__setUnderAgeOfConsent = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "setTagForUnderAgeOfConsent", "(Ljava/lang/String;)V");
+			__setMaxAdContentRating = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "setMaxAdContentRating", "(Ljava/lang/String;)V");
 
 			var _init_func = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "init", "(Lorg/haxe/lime/HaxeObject;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Z)V", true);
 	
@@ -183,6 +195,38 @@ class AdMob extends Extension
 			__setBannerPosition(gravityMode);
 		}catch(e:Dynamic){
 			trace("setBannerPosition Exception: "+e);
+		}
+	}
+
+	public static function setDebugGeography(value:String) {
+		try{
+			__setDebugGeography(value);
+		}catch(e:Dynamic){
+			trace("setDebugGeography Exception: "+e);
+		}
+	}
+
+	public static function setChildDirectedTreatment(value:String) {
+		try{
+			__setChildDirectedTreatment(value);
+		}catch(e:Dynamic){
+			trace("setChildDirectedTreatment Exception: "+e);
+		}
+	}
+
+	public static function setUnderAgeOfConsent(value:String) {
+		try{
+			__setUnderAgeOfConsent(value);
+		}catch(e:Dynamic){
+			trace("setUnderAgeOfConsent Exception: "+e);
+		}
+	}
+
+	public static function setMaxAdContentRating(value:String) {
+		try{
+			__setMaxAdContentRating(value);
+		}catch(e:Dynamic){
+			trace("setMaxAdContentRating Exception: "+e);
 		}
 	}
 	
