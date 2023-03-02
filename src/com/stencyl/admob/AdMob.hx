@@ -58,71 +58,6 @@ class AdMob extends Extension
 
 	////////////////////////////////////////////////////////////////////////////
 	
-	#if ios
-	//Ads Events only happen on iOS. AdMob provides no out-of-the-box way.
-	private static function notifyListeners(inEvent:Dynamic)
-	{
-		var data:String = Std.string(Reflect.field(inEvent, "type"));
-		
-		if(data == "banneropen")
-		{
-			trace("USER OPENED BANNER");
-			instance.nativeEventQueue.push(AdEvent(BANNER, OPENED));
-		}
-		
-		if(data == "bannerclose")
-		{
-			trace("USER CLOSED BANNER");
-			instance.nativeEventQueue.push(AdEvent(BANNER, CLOSED));
-		}
-		
-		if(data == "bannerload")
-		{
-			trace("BANNER SHOWED UP");
-			instance.nativeEventQueue.push(AdEvent(BANNER, LOADED));
-		}
-		
-		if(data == "bannerfail")
-		{
-			trace("BANNER FAILED TO LOAD");
-			instance.nativeEventQueue.push(AdEvent(BANNER, FAILED_TO_LOAD));
-		}
-		if(data == "bannerclicked")
-		{
-			trace("BANNER IS CLICKED");
-			instance.nativeEventQueue.push(AdEvent(BANNER, CLICKED));
-		}
-		if(data == "interstitialopen")
-		{
-			trace("USER OPENED INTERSTITIAL");
-			instance.nativeEventQueue.push(AdEvent(INTERSTITIAL, OPENED));
-		}
-		
-		if(data == "interstitialclose")
-		{
-			trace("USER CLOSED INTERSTITIAL");
-			instance.nativeEventQueue.push(AdEvent(INTERSTITIAL, CLOSED));
-		}
-		
-		if(data == "interstitialload")
-		{
-			trace("INTERSTITIAL SHOWED UP");
-			instance.nativeEventQueue.push(AdEvent(INTERSTITIAL, LOADED));
-		}
-		
-		if(data == "interstitialfail")
-		{
-			trace("INTERSTITIAL FAILED TO LOAD");
-			instance.nativeEventQueue.push(AdEvent(INTERSTITIAL, FAILED_TO_LOAD));
-		}
-		if(data == "interstitialclicked")
-		{
-			trace("INTERSTITIAL IS CLICKED");
-			instance.nativeEventQueue.push(AdEvent(INTERSTITIAL, CLICKED));
-		}
-	}
-	#end
-	
 	public static function loadInterstitial() {
 		try{
 			__loadInterstitial();
@@ -156,7 +91,7 @@ class AdMob extends Extension
 		try{
 			// CPP METHOD LINKING
 			var __init = cpp.Lib.load("adMobEx","admobex_init",5);
-			var set_event_handle = cpp.Lib.load("adMobEx", "ads_set_event_handle", 1);
+			var set_ad_event_handle = cpp.Lib.load("adMobEx", "ads_set_ad_event_handle", 1);
 			__showBanner = cpp.Lib.load("adMobEx","admobex_banner_show",0);
 			__hideBanner = cpp.Lib.load("adMobEx","admobex_banner_hide",0);
 			__loadInterstitial = cpp.Lib.load("admobex","admobex_interstitial_load",0);
@@ -167,7 +102,7 @@ class AdMob extends Extension
 			__showConsentForm = cpp.Lib.load("admobex","admobex_showConsentForm",1);
 
 			__init("",AdmobConfig.iosBannerKey,AdmobConfig.iosInterstitialKey,gravityMode,AdmobConfig.enableTestAds);
-			set_event_handle(notifyListeners);
+			set_ad_event_handle(onAdmobAdEvent);
 		}catch(e:Dynamic){
 			trace("iOS INIT Exception: "+e);
 		}
@@ -272,67 +207,33 @@ class AdMob extends Extension
 		}
 	}
 	
-	///Android Callbacks
-	#if android
-	public function onAdmobBannerClosed() 
+	//Callbacks
+	public function onAdmobAdEvent(adTypeString:String, adEventTypeString:String)
 	{
-		trace("USER CLOSED BANNER");
-		nativeEventQueue.push(AdEvent(BANNER, CLOSED));
+		trace(adTypeString + " " + adEventTypeString);
+		
+		var adType:AdType = switch(adTypeString)
+		{
+			case "banner": BANNER;
+			case "interstitial": INTERSTITIAL;
+			default: null;
+		}
+		
+		var adEventType:AdEventType = switch(adEventTypeString)
+		{
+			case "open": OPENED;
+			case "close": CLOSED;
+			case "load": LOADED;
+			case "fail": FAILED_TO_LOAD;
+			case "click": CLICKED;
+			default: null;
+		}
+		
+		if(adType != null && adEventType != null)
+		{
+			nativeEventQueue.push(AdEvent(adType, adEventType));
+		}
 	}
-			
-	public function onAdmobBannerOpened() 
-	{
-		trace("USER OPENED BANNER");
-		nativeEventQueue.push(AdEvent(BANNER, OPENED));
-	}
-	
-	public function onAdmobBannerLoaded() 
-	{		
-		trace("BANNER SHOWED UP");
-		nativeEventQueue.push(AdEvent(BANNER, LOADED));
-	}		
-	
-	public function onAdmobBannerFailed() 
-	{
-		trace("BANNER FAILED TO LOAD");
-		nativeEventQueue.push(AdEvent(BANNER, FAILED_TO_LOAD));
-	}
-	
-	public function onAdmobBannerClicked() 
-	{
-		trace("BANNER IS CLICKED");
-		nativeEventQueue.push(AdEvent(BANNER, CLICKED));
-	}
-	
-	public function onAdmobInterstitialClosed() 
-	{
-		trace("USER CLOSED INTERSTITIAL");
-		nativeEventQueue.push(AdEvent(INTERSTITIAL, CLOSED));
-	}
-			
-	public function onAdmobInterstitialOpened() 
-	{
-		trace("USER OPENED INTERSTITIAL");
-		nativeEventQueue.push(AdEvent(INTERSTITIAL, OPENED));
-	}
-	
-	public function onAdmobInterstitialLoaded() 
-	{		
-		trace("INTERSTITIAL SHOWED UP");
-		nativeEventQueue.push(AdEvent(INTERSTITIAL, LOADED));
-	}		
-	
-	public function onAdmobInterstitialFailed() 
-	{
-		trace("INTERSTITIAL FAILED TO LOAD");
-		nativeEventQueue.push(AdEvent(INTERSTITIAL, FAILED_TO_LOAD));
-	}
-	public function onAdmobInterstitialClicked() 
-	{
-		trace("INTERSTITIAL IS CLICKED");
-		nativeEventQueue.push(AdEvent(INTERSTITIAL, CLICKED));
-	}
-	#end
 
 	public override function preSceneUpdate()
 	{

@@ -260,26 +260,26 @@ public class AdMobEx extends Extension {
                  interstitial.setAdListener(new AdListener() {
                     public void onAdLoaded() {
                         loadingInterstitial=false;
-                        callback.call("onAdmobInterstitialLoaded", new Object[] {});
+                        callback.call("onAdmobAdEvent", new Object[] {"interstitial", "load"});
                         Log.d(TAG,"Received Interstitial!");
                     }
                     public void onAdFailedToLoad(int errorcode) {
                         loadingInterstitial=false;
                         failInterstitial=true;
-                        callback.call("onAdmobInterstitialFailed", new Object[] {});
+                        callback.call("onAdmobAdEvent", new Object[] {"interstitial", "fail"});
 						//reloadInterstitial();
                         Log.e(TAG,"Fail to get Interstitial: "+errorcode);
                     }
                     public void onAdClosed() {
                         //reloadInterstitial();
-                        callback.call("onAdmobInterstitialClosed", new Object[] {});
+                        callback.call("onAdmobAdEvent", new Object[] {"interstitial", "close"});
                         Log.d(TAG,"Dismiss Interstitial");
                     }
                     public void onAdOpened(){
-                        callback.call("onAdmobInterstitialOpened", new Object[] {});
+                        callback.call("onAdmobAdEvent", new Object[] {"interstitial", "open"});
                     }
                     public void onAdLeftApplication(){
-                        callback.call("onAdmobInterstitialClicked", new Object[] {});
+                        callback.call("onAdmobAdEvent", new Object[] {"interstitial", "click"});
                     }
                  });
                  reloadInterstitial();
@@ -330,7 +330,7 @@ public class AdMobEx extends Extension {
         banner.setAdListener(new AdListener() {
             public void onAdLoaded() {
                 loadingBanner=false;
-                callback.call("onAdmobBannerLoaded", new Object[] {});
+                callback.call("onAdmobAdEvent", new Object[] {"banner", "load"});
                 Log.d(TAG,"Received Banner OK!");
                 if(mustBeShowingBanner){
                     showBanner();
@@ -341,17 +341,17 @@ public class AdMobEx extends Extension {
             public void onAdFailedToLoad(int errorcode) {
                 loadingBanner=false;
                 failBanner=true;
-                callback.call("onAdmobBannerFailed", new Object[] {});
+                callback.call("onAdmobAdEvent", new Object[] {"banner", "fail"});
                 Log.e(TAG,"Fail to get Banner: "+errorcode);
             }
             public void onAdClosed(){
-                callback.call("onAdmobBannerClosed", new Object[] {});
+                callback.call("onAdmobAdEvent", new Object[] {"banner", "close"});
             }
             public void onAdOpened(){
-                callback.call("onAdmobBannerOpened", new Object[] {});
+                callback.call("onAdmobAdEvent", new Object[] {"banner", "open"});
             }
 			public void onAdLeftApplication(){
-                    callback.call("onAdmobBannerClicked", new Object[] {});
+                    callback.call("onAdmobAdEvent", new Object[] {"banner", "click"});
             }
         });
         

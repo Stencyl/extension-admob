@@ -20,7 +20,7 @@
 
 using namespace admobex;
 
-extern "C" void sendEvent(const char* event);
+extern "C" void sendAdEvent(const char* adType, const char* adEventType);
 
 @interface InitializeAdmobListener : NSObject
     {
@@ -146,21 +146,21 @@ static InterstitialListener *interstitialListener;
 /// Called when an interstitial ad request succeeded.
 - (void)interstitialDidReceiveAd:(GADInterstitial *)ad
 {
-    sendEvent("interstitialload");
+    sendAdEvent("interstitial", "load");
     NSLog(@"interstitialDidReceiveAd");
 }
 
 /// Called when an interstitial ad request failed.
 - (void)interstitial:(GADInterstitial *)ad didFailToReceiveAdWithError:(GADRequestError *)error
 {
-    sendEvent("interstitialfail");
+    sendAdEvent("interstitial", "fail");
     NSLog(@"interstitialDidFailToReceiveAdWithError: %@", [error localizedDescription]);
 }
 
 /// Called just before presenting an interstitial.
 - (void)interstitialWillPresentScreen:(GADInterstitial *)ad
 {
-    sendEvent("interstitialopen");
+    sendAdEvent("interstitial", "open");
     NSLog(@"interstitialWillPresentScreen");
 }
 
@@ -173,7 +173,7 @@ static InterstitialListener *interstitialListener;
 /// Called just after dismissing an interstitial and it has animated off the screen.
 - (void)interstitialDidDismissScreen:(GADInterstitial *)ad
 {
-    sendEvent("interstitialclose");
+    sendAdEvent("interstitial", "close");
     NSLog(@"interstitialDidDismissScreen");
 }
 
@@ -181,7 +181,7 @@ static InterstitialListener *interstitialListener;
 /// ad that will launch another application (such as the App Store).
 - (void)interstitialWillLeaveApplication:(GADInterstitial *)ad
 {
-    sendEvent("interstitialclicked");
+    sendAdEvent("interstitial", "click");
     NSLog(@"interstitialWillLeaveApplication is clicked");
 }
 
@@ -336,27 +336,27 @@ static BannerListener *bannerListener;
 /// Called when an banner ad request succeeded.
 - (void)adViewDidReceiveAd:(GADBannerView *)bannerView
 {
-    sendEvent("bannerload");
+    sendAdEvent("banner", "load");
     NSLog(@"AdMob: banner ad successfully loaded!");
 }
 
 /// Called when an banner ad request failed.
 - (void)adView:(GADBannerView *)bannerView didFailToReceiveAdWithError:(GADRequestError *)error
 {
-    sendEvent("bannerfail");
+    sendAdEvent("banner", "fail");
     NSLog(@"AdMob: banner failed to load...");
 }
 
 - (void)adViewWillPresentScreen:(GADBannerView *)bannerView
 {
-    sendEvent("banneropen");
+    sendAdEvent("banner", "open");
     NSLog(@"AdMob: banner was opened.");
 }
 
 /// Called before the banner is to be animated off the screen.
 - (void)adViewWillDismissScreen:(GADBannerView *)bannerView
 {
-    sendEvent("bannerclose");
+    sendAdEvent("banner", "close");
     NSLog(@"AdMob: banner was closed.");
 }
 
@@ -364,7 +364,7 @@ static BannerListener *bannerListener;
 /// ad that will launch another application (such as the App Store).
 - (void)adViewWillLeaveApplication:(GADBannerView *)bannerView
 {
-    sendEvent("bannerclicked");
+    sendAdEvent("banner", "click");
     NSLog(@"AdMob: banner made the user leave the game. is clicked");
 }
 

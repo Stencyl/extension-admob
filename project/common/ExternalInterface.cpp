@@ -17,11 +17,11 @@ AutoGCRoot* adEventHandle = 0;
 
 #ifdef IPHONE
 
-static void ads_set_event_handle(value onEvent)
+static void ads_set_ad_event_handle(value onEvent)
 {
     adEventHandle = new AutoGCRoot(onEvent);
 }
-DEFINE_PRIM(ads_set_event_handle, 1);
+DEFINE_PRIM(ads_set_ad_event_handle, 1);
 
 static value admobex_init(value admob_id, value banner_id, value interstitial_id, value gravity_mode, value testing_ads){
 	init(val_string(admob_id),val_string(banner_id),val_string(interstitial_id), val_string(gravity_mode), val_bool(testing_ads));
@@ -87,10 +87,8 @@ DEFINE_ENTRY_POINT (admobex_main);
 
 extern "C" int admobex_register_prims () { return 0; }
 
-extern "C" void sendEvent(char* type)
+extern "C" void sendAdEvent(char* adType, char* adEventType)
 {
-    printf("Send Event: %s\n", type);
-    value o = alloc_empty_object();
-    alloc_field(o,val_id("type"),alloc_string(type));
-    val_call1(adEventHandle->get(), o);
+    printf("Send Ad Event: %s %s\n",adType, adEventType);
+    val_call2(adEventHandle->get(), alloc_string(adType), alloc_string(adEventType));
 }
