@@ -10,41 +10,29 @@ package com.byrobin.admobex;
 import org.haxe.extension.Extension;
 import org.haxe.lime.HaxeObject;
 
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.Date;
-import java.util.Queue;
+import java.security.MessageDigest;
+import java.util.ArrayList;
+import java.util.List;
 
-import android.app.Activity;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.os.Handler;
+import android.provider.Settings.Secure;
 import android.util.Log;
-import android.view.KeyEvent;
-import android.view.Window;
-import android.view.WindowManager;
-import android.content.Context;
-import android.content.Intent;
-import android.media.AudioManager;
-import android.media.audiofx.AudioEffect.OnControlStatusChangeListener;
-import android.widget.LinearLayout;
-import android.view.ViewGroup;
 import android.view.Gravity;
+import android.view.ViewGroup;
+import android.view.ViewGroup.LayoutParams;
 import android.view.animation.Animation;
 import android.view.animation.AlphaAnimation;
-import android.view.View;
-import android.view.ViewGroup.LayoutParams;
-import android.util.Log;
-import android.provider.Settings.Secure;
+import android.widget.LinearLayout;
 
-import java.security.MessageDigest;
+import androidx.annotation.NonNull;
 
-import com.google.android.gms.ads.*;
-import com.google.ads.consent.*;
 import com.google.ads.mediation.admob.AdMobAdapter;
-
-import dalvik.system.DexClassLoader;
+import com.google.android.gms.ads.*;
+import com.google.android.gms.ads.initialization.InitializationStatus;
+import com.google.android.gms.ads.initialization.OnInitializationCompleteListener;
+import com.google.android.gms.ads.interstitial.*;
+import com.google.android.ump.*;
 
 public class AdMobEx extends Extension {
 
@@ -54,8 +42,8 @@ public class AdMobEx extends Extension {
 	private static InterstitialAd interstitial;
 	private static AdView banner = null;
     private static LinearLayout layout;
-	private static AdRequest adReq;
-    private static HaxeObject callback;
+	private static HaxeObject callback;
+
 	private static final String TAG = "AdMobEx";
 
 	//////////////////////////////////////////////////////////////////////////////////////////////////
@@ -63,8 +51,6 @@ public class AdMobEx extends Extension {
     
 	private static String admobId=null;
     
-    private static boolean failInterstitial=false;
-	private static boolean loadingInterstitial=false;
 	private static String interstitialId=null;
 
 	private static boolean failBanner=false;
@@ -77,11 +63,8 @@ public class AdMobEx extends Extension {
 	private static int gravity=Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL;
 	
 	private static String deviceId;
-	private static String privacyURL;
-	private static ConsentForm form;
-	private static ConsentInformation consentInformation;
-	private static ConsentStatus playerConsent;
-	private static boolean formLoaded = false;
+	private static boolean consentChecked = false;
+	private static ConsentForm consentForm;
 	private static boolean showWhenLoaded = false;
 
 	//////////////////////////////////////////////////////////////////////////////////////////////////
@@ -98,7 +81,7 @@ public class AdMobEx extends Extension {
 	static public void init(HaxeObject cb, String admobId, String bannerId, String interstitialId, String gravityMode, boolean testingAds){
         
         callback = cb;
-		AdMobEx.admobId=mainActivity.getResources().getString(R.string.admob_app_id);
+        AdMobEx.admobId=mainActivity.getResources().getString(R.string.admob_app_id);
 		AdMobEx.bannerId=bannerId;
 		AdMobEx.interstitialId=interstitialId;
 		AdMobEx.testingAds=testingAds;
@@ -129,7 +112,7 @@ public class AdMobEx extends Extension {
 		Log.d(TAG,"Show Interstitial Begin");
 		if(interstitialId.isEmpty()) return;
 		mainActivity.runOnUiThread(new Runnable() {
-			public void run() {	if(interstitial.isLoaded()) interstitial.show();	}
+			public void run() {	if(interstitial != null) interstitial.show(mainActivity);	}
 		});
 		Log.d(TAG,"Show Interstitial End");
 	}
@@ -239,77 +222,116 @@ public class AdMobEx extends Extension {
         {
             public void run()
             {
-                MobileAds.initialize(mainActivity.getApplicationContext(), admobId);
-                Log.d(TAG,"Admob AppID: "+admobId);
+                MobileAds.initialize(mainActivity.getApplicationContext(), new OnInitializationCompleteListener()
+				{
+					@Override
+					public void onInitializationComplete(@NonNull InitializationStatus initializationStatus)
+					{
+						Log.d(TAG,"Admob AppID: "+admobId);
 
-                if(testingAds){
-                    String android_id = Secure.getString(mainActivity.getContentResolver(), Secure.ANDROID_ID);
-                    deviceId = getInstance().md5(android_id).toUpperCase();
-                    Log.d(TAG,"DEVICE ID: "+deviceId);
-                }
+						if(testingAds){
+							String android_id = Secure.getString(mainActivity.getContentResolver(), Secure.ANDROID_ID);
+							deviceId = getInstance().md5(android_id).toUpperCase();
+							Log.d(TAG,"DEVICE ID: "+deviceId);
+						}
+						updateRequestConfig();
+						getConsentInfo();
+						
+						if(!bannerId.isEmpty()){
+							reinitBanner();
+						}
 
-				buildAdReq(true);
-        
-                if(!bannerId.isEmpty()){
-                    reinitBanner();
-                }
-        
-                if(!interstitialId.isEmpty()){
-                 interstitial = new InterstitialAd(mainActivity);
-                 interstitial.setAdUnitId(interstitialId);
-                 interstitial.setAdListener(new AdListener() {
-                    public void onAdLoaded() {
-                        loadingInterstitial=false;
-                        callback.call("onAdmobAdEvent", new Object[] {"interstitial", "load"});
-                        Log.d(TAG,"Received Interstitial!");
-                    }
-                    public void onAdFailedToLoad(int errorcode) {
-                        loadingInterstitial=false;
-                        failInterstitial=true;
-                        callback.call("onAdmobAdEvent", new Object[] {"interstitial", "fail"});
-						//reloadInterstitial();
-                        Log.e(TAG,"Fail to get Interstitial: "+errorcode);
-                    }
-                    public void onAdClosed() {
-                        //reloadInterstitial();
-                        callback.call("onAdmobAdEvent", new Object[] {"interstitial", "close"});
-                        Log.d(TAG,"Dismiss Interstitial");
-                    }
-                    public void onAdOpened(){
-                        callback.call("onAdmobAdEvent", new Object[] {"interstitial", "open"});
-                    }
-                    public void onAdLeftApplication(){
-                        callback.call("onAdmobAdEvent", new Object[] {"interstitial", "click"});
-                    }
-                 });
-                 reloadInterstitial();
-                 }
-                
-				getConsentInfo();
+						if(!interstitialId.isEmpty()){
+							reloadInterstitial();
+						}
+					}
+				});
             }
         });
     }
-    
-	public static void buildAdReq(boolean npa)
+
+	private static InterstitialAdLoadCallback interstitialAdLoadCallback = new InterstitialAdLoadCallback()
 	{
-		AdRequest.Builder builder = new AdRequest.Builder();
-		builder.addTestDevice(AdRequest.DEVICE_ID_EMULATOR);
+		@Override
+		public void onAdLoaded(@NonNull InterstitialAd interstitialAd)
+		{
+			super.onAdLoaded(interstitialAd);
+			interstitial = interstitialAd;
+			interstitial.setFullScreenContentCallback(interstitialContentCallback);
+			callback.call("onAdmobAdEvent", new Object[] {"interstitial", "load"});
+			Log.d(TAG,"Received Interstitial!");
+		}
+
+		@Override
+		public void onAdFailedToLoad(@NonNull LoadAdError loadAdError)
+		{
+			super.onAdFailedToLoad(loadAdError);
+			interstitial = null;
+			callback.call("onAdmobAdEvent", new Object[] {"interstitial", "fail"});
+			//reloadInterstitial();
+			Log.e(TAG,"Fail to get Interstitial: "+loadAdError);
+		}
+	};
+
+	private static FullScreenContentCallback interstitialContentCallback = new FullScreenContentCallback()
+	{
+		@Override
+		public void onAdShowedFullScreenContent()
+		{
+			super.onAdShowedFullScreenContent();
+			callback.call("onAdmobAdEvent", new Object[] {"interstitial", "open"});
+		}
+
+		@Override
+		public void onAdDismissedFullScreenContent()
+		{
+			super.onAdDismissedFullScreenContent();
+			//reloadInterstitial();
+			callback.call("onAdmobAdEvent", new Object[] {"interstitial", "close"});
+			Log.d(TAG,"Dismiss Interstitial");
+		}
+
+		@Override
+		public void onAdClicked()
+		{
+			super.onAdClicked();
+			callback.call("onAdmobAdEvent", new Object[] {"interstitial", "click"});
+		}
+
+		@Override
+		public void onAdFailedToShowFullScreenContent(@NonNull AdError adError)
+		{
+			super.onAdFailedToShowFullScreenContent(adError);
+		}
+
+		@Override
+		public void onAdImpression()
+		{
+			super.onAdImpression();
+		}
+	};
+
+	private static void updateRequestConfig()
+	{
+		List<String> testDeviceIds = new ArrayList<>();
+
+		testDeviceIds.add(AdRequest.DEVICE_ID_EMULATOR);
 		if (testingAds)
 		{
-			builder.addTestDevice(deviceId);
+			testDeviceIds.add(deviceId);
 		}
-		if (npa)
-		{
-			Log.d(TAG,"Building ad request for non-personalized ads.");
-			Bundle extras = new Bundle();
-			extras.putString("npa", "1");
-			builder.addNetworkExtrasBundle(AdMobAdapter.class, extras);
-		}
-		else
-		{
-			Log.d(TAG,"Building ad request for personalized ads.");
-		}
-		adReq = builder.build();
+
+		RequestConfiguration requestConfiguration = MobileAds.getRequestConfiguration()
+			.toBuilder()
+			.setTestDeviceIds(testDeviceIds)
+			.build();
+		MobileAds.setRequestConfiguration(requestConfiguration);
+	}
+    
+	public static AdRequest buildAdReq()
+	{
+		AdRequest.Builder builder = new AdRequest.Builder();
+		return builder.build();
 	}
 	
     static public void reinitBanner(){
@@ -358,24 +380,42 @@ public class AdMobEx extends Extension {
         mainActivity.addContentView(layout, new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT));
         layout.addView(banner);
         layout.bringToFront();
-        reloadBanner();
+        if(consentChecked)
+        {
+        	reloadBanner();
+        }
+        else
+        {
+        	failBanner = true;
+        }
     }
     
     public static void reloadInterstitial(){
         if(interstitialId.isEmpty()) return;
         //if(loadingInterstitial) return;
         Log.d(TAG,"Reload Interstitial");
-        loadingInterstitial=true;
-        interstitial.loadAd(adReq);
-        failInterstitial=false;
+        if(!consentChecked)
+        {
+        	callback.call("onAdmobAdEvent", new Object[] {"interstitial", "fail"});
+			Log.e(TAG,"Fail to get Interstitial: User consent hasn't been checked yet");
+			return;
+        }
+		InterstitialAd.load(mainContext, interstitialId, buildAdReq(), interstitialAdLoadCallback);
     }
     
     static public void reloadBanner(){
         if(bannerId.isEmpty()) return;
         if(loadingBanner) return;
         Log.d(TAG,"Reload Banner");
+        if(!consentChecked)
+        {
+        	callback.call("onAdmobAdEvent", new Object[] {"banner", "fail"});
+            Log.e(TAG,"Fail to get Banner: User consent hasn't been checked yet");
+            failBanner = true;
+			return;
+        }
         loadingBanner=true;
-        banner.loadAd(adReq);
+        banner.loadAd(buildAdReq());
         failBanner=false;
     }
     
@@ -391,90 +431,25 @@ public class AdMobEx extends Extension {
         return "";
     }
 
-	public static void setPrivacyURL(final String pURL)
-	{
-		privacyURL = pURL;
-	}
-	
-	static public void getConsentInfo()
-	{
-		consentInformation = ConsentInformation.getInstance(mainContext);
-		String pubID = admobId.split("~")[0];
-		String[] publisherIds = {pubID};
-		
-		if (testingAds)
-		{
-			consentInformation.addTestDevice(deviceId);
-			consentInformation.setDebugGeography(DebugGeography.DEBUG_GEOGRAPHY_EEA);
-			//consentInformation.setDebugGeography(DebugGeography.DEBUG_GEOGRAPHY_NOT_EEA);
-		}
-
-		consentInformation.requestConsentInfoUpdate(publisherIds, new ConsentInfoUpdateListener()
-		{
-			@Override
-			public void onConsentInfoUpdated(ConsentStatus consentStatus)
-			{
-				if (consentInformation.isRequestLocationInEeaOrUnknown())
-				{
-					checkConsentStatus(consentStatus);
-				}
-				else
-				{
-					Log.d(TAG, "Player is outside EEA so no need check consent status");
-					buildAdReq(false);
-				}
-			}
-
-			@Override
-			public void onFailedToUpdateConsentInfo(String errorDescription)
-			{
-				Log.e(TAG, "Consent update failed with error: " + errorDescription);
-			}
-		});
-	}
-	
-	public static void checkConsentStatus(ConsentStatus consentStatus)
-	{
-		playerConsent = consentStatus;
-		
-		if (playerConsent == ConsentStatus.PERSONALIZED)
-		{
-			Log.d(TAG, "Player consents to personalized ads.");
-			buildAdReq(false);
-		}
-		else if (playerConsent == ConsentStatus.NON_PERSONALIZED)
-		{
-			Log.d(TAG, "Player consents to non-personalized ads.");
-			buildAdReq(true);
-		}
-		else if (playerConsent == ConsentStatus.UNKNOWN)
-		{
-			Log.d(TAG, "Consent status is unknown.");
-			buildAdReq(true);
-		}
-	}
-	
 	public static void showConsentForm(final boolean checkConsent)
 	{
-		if (checkConsent && (playerConsent == ConsentStatus.PERSONALIZED || playerConsent == ConsentStatus.NON_PERSONALIZED))
+		int consentStatus = UserMessagingPlatform.getConsentInformation(mainContext).getConsentStatus();
+		if (checkConsent && consentStatus == ConsentInformation.ConsentStatus.OBTAINED)
 		{
 			Log.d(TAG, "Skipping form because player already answered");
+			consentChecked = true;
 			return;
 		}
-		
-        mainActivity.runOnUiThread(new Runnable()
-        {
-            public void run()
-            {
+
+		mainActivity.runOnUiThread(new Runnable()
+		{
+			public void run()
+			{
 				showWhenLoaded = true;
-				
-				if (formLoaded)
+
+				if (consentForm != null)
 				{
-					form.show();
-				}
-				else if (form != null)
-				{
-					form.load();
+					showForm();
 				}
 				else
 				{
@@ -483,78 +458,106 @@ public class AdMobEx extends Extension {
 			}
 		});
 	}
-	
-    static public void setupForm()
+
+	static public void setupForm()
 	{
-		if (privacyURL == null || privacyURL.isEmpty())
+		ConsentRequestParameters.Builder paramsBuilder = new ConsentRequestParameters.Builder();
+		if (testingAds)
 		{
-			Log.e(TAG, "Can't setup form with missing privacy URL");
-			return;
+			ConsentDebugSettings debugSettings = new ConsentDebugSettings.Builder(mainContext)
+				.setDebugGeography(ConsentDebugSettings.DebugGeography.DEBUG_GEOGRAPHY_EEA)
+				//.setDebugGeography(ConsentDebugSettings.DebugGeography.DEBUG_GEOGRAPHY_NOT_EEA)
+				.addTestDeviceHashedId(deviceId)
+				.build();
+			paramsBuilder.setConsentDebugSettings(debugSettings);
 		}
-		
-		consentInformation = ConsentInformation.getInstance(mainContext);
-		if (!consentInformation.isRequestLocationInEeaOrUnknown())
-		{
-			Log.d(TAG, "Player is outside EEA so no need to show form");
-			return;
-		}
-		
-        mainActivity.runOnUiThread(new Runnable()
-        {
-            public void run()
-            {
-				URL pUrl = null;
-				try
-				{
-					pUrl = new URL(privacyURL);
-				}
-				catch (MalformedURLException e)
-				{
-					Log.e(TAG, "Privacy URL is malformed.");
-					return;
-				}
-				form = new ConsentForm.Builder(mainContext, pUrl)
-					.withListener(new ConsentFormListener()
+		ConsentRequestParameters params = paramsBuilder
+			.setAdMobAppId(admobId)
+			.setTagForUnderAgeOfConsent(false)
+			.build();
+
+		ConsentInformation consentInformation = UserMessagingPlatform.getConsentInformation(mainContext);
+		consentInformation.requestConsentInfoUpdate(
+			mainActivity,
+			params,
+			new ConsentInformation.OnConsentInfoUpdateSuccessListener() {
+				@Override
+				public void onConsentInfoUpdateSuccess() {
+					if (consentInformation.isConsentFormAvailable())
 					{
-						@Override
-						public void onConsentFormLoaded()
-						{
-							Log.d(TAG, "Consent form loaded.");
-							formLoaded = true;
-							if (showWhenLoaded)
-							{
-								form.show();
-							}
-						}
+						loadForm();
+					}
+					else
+					{
+						consentChecked = true;
+						Log.d(TAG, "No consent form available");
+					}
+				}
+			},
+			new ConsentInformation.OnConsentInfoUpdateFailureListener() {
+				@Override
+				public void onConsentInfoUpdateFailure(FormError formError) {
+					Log.e(TAG, "Consent update failed with error: " + formError.getMessage());
+				}
+			});
+	}
+	
+	static public void getConsentInfo()
+	{
+		int consentStatus = UserMessagingPlatform.getConsentInformation(mainContext).getConsentStatus();
+		if (checkConsent && consentStatus == ConsentInformation.ConsentStatus.OBTAINED)
+		{
+			Log.d(TAG, "Skipping form because player already answered");
+			consentChecked = true;
+			return;
+		}
 
-						@Override
-						public void onConsentFormOpened()
-						{
-							Log.d(TAG, "Consent form opened.");
-							showWhenLoaded = false;
-						}
-
-						@Override
-						public void onConsentFormClosed(ConsentStatus consentStatus, Boolean userPrefersAdFree)
-						{
-							Log.d(TAG, "Consent form closed.");
-							formLoaded = false;
-							checkConsentStatus(consentStatus);
-						}
-
-						@Override
-						public void onConsentFormError(String errorDescription)
-						{
-							Log.e(TAG, "Consent form error: " + errorDescription);
-							formLoaded = false;
-						}
-					})
-					.withPersonalizedAdsOption()
-					.withNonPersonalizedAdsOption()
-					.build();
-					
-					form.load();
+		mainActivity.runOnUiThread(new Runnable()
+		{
+			public void run()
+			{
+				showWhenLoaded = false;
+				setupForm();
 			}
 		});
-    }
+	}
+
+	public static void loadForm() {
+		AdMobEx.consentForm = null;
+		UserMessagingPlatform.loadConsentForm(
+			mainContext, new UserMessagingPlatform.OnConsentFormLoadSuccessListener() {
+				@Override
+				public void onConsentFormLoadSuccess(ConsentForm consentForm) {
+					Log.d(TAG, "Consent form loaded.");
+					AdMobEx.consentForm = consentForm;
+
+
+					if (showWhenLoaded)
+					{
+						showForm();
+					}
+				}
+			},
+			new UserMessagingPlatform.OnConsentFormLoadFailureListener() {
+				@Override
+				public void onConsentFormLoadFailure(FormError formError) {
+					Log.e(TAG, "Consent form load failed with error: " + formError.getMessage());
+				}
+			});
+	}
+
+	private static void showForm()
+	{
+		showWhenLoaded = false;
+		consentForm.show(
+			mainActivity,
+			new ConsentForm.OnConsentFormDismissedListener() {
+				@Override
+				public void onConsentFormDismissed(FormError formError) {
+					loadForm();
+					Log.d(TAG, "Consent form closed.");
+					consentChecked = true;
+				}
+			});
+	}
 }

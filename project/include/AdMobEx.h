@@ -12,7 +12,6 @@ namespace admobex {
 	void refreshBanner();
     void loadInterstitial();
 	void showInterstitial();
-	void setPrivacyURL(const char *url);
 	void showConsentForm(bool checkConsent);
 }
 

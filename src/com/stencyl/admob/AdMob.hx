@@ -48,7 +48,6 @@ class AdMob extends Extension
 	private static var __onResize:Void->Void = function(){};
 	private static var __refresh:Void->Void = function(){};
 	private static var __setBannerPosition:String->Void = function(gravityMode:String){};
-	private static var __setPrivacyURL:String->Void = function(privacyURL:String){};
 	private static var __showConsentForm:Bool->Void = function(checkConsent:Bool){};
 	
 	////////////////////////////////////////////////////////////////////////////
@@ -98,7 +97,6 @@ class AdMob extends Extension
 			__showInterstitial = cpp.Lib.load("admobex","admobex_interstitial_show",0);
 			__refresh = cpp.Lib.load("adMobEx","admobex_banner_refresh",0);
 			__setBannerPosition = cpp.Lib.load("admobex","admobex_banner_move",1);
-			__setPrivacyURL = cpp.Lib.load("admobex","admobex_setPrivacyURL",1);
 			__showConsentForm = cpp.Lib.load("admobex","admobex_showConsentForm",1);
 
 			__init("",AdmobConfig.iosBannerKey,AdmobConfig.iosInterstitialKey,gravityMode,AdmobConfig.enableTestAds);
@@ -117,7 +115,6 @@ class AdMob extends Extension
 			__showInterstitial = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "showInterstitial", "()V");
 			__onResize = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "onResize", "()V");
 			__setBannerPosition = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "setBannerPosition", "(Ljava/lang/String;)V");
-			__setPrivacyURL = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "setPrivacyURL", "(Ljava/lang/String;)V");
 			__showConsentForm = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "showConsentForm", "(Z)V");
 
 			var _init_func = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "init", "(Lorg/haxe/lime/HaxeObject;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Z)V", true);
@@ -186,15 +183,6 @@ class AdMob extends Extension
 			__setBannerPosition(gravityMode);
 		}catch(e:Dynamic){
 			trace("setBannerPosition Exception: "+e);
-		}
-	}
-	
-	public static function setPrivacyURL(privacyURL:String)
-	{
-		try{
-			__setPrivacyURL(privacyURL);
-		}catch(e:Dynamic){
-			trace("setPrivacyURL Exception: "+e);
 		}
 	}
 	

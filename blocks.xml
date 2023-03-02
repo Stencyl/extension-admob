@@ -110,17 +110,6 @@
         </fields>
     </block>
 
-    <block tag="admob-setPrivacyURL"
-           code="com.stencyl.admob.AdMob.setPrivacyURL(~);"
-           type="action"
-           returns="void"
-           category="mobile"
-           helpURL="game-mobile">
-        <fields>
-            <text order="0" />
-        </fields>
-    </block>
-	
     <block tag="admob-showConsentForm"
            code="com.stencyl.admob.AdMob.showConsentForm(~);"
            type="action"
@@ -161,6 +150,19 @@
         </fields>
     </block>
 
+    <block tag="admob-setPrivacyURL"
+           code="com.stencyl.admob.AdMob.setPrivacyURL(~);"
+           type="action"
+           returns="void"
+           category="mobile"
+           helpURL="game-mobile"
+           hidden="true"
+           deprecated="true">
+        <fields>
+            <text order="0" />
+        </fields>
+    </block>
+    
     <block tag="iad-load-show"
            code="~MobileAd();"
            type="action"

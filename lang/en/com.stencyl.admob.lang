@@ -15,9 +15,6 @@ admob-reinit-banner.help=Reinitialize Admob banner.
 admob-setbanner-position=move banner to %0 [c:mobile]
 admob-setbanner-position.help=Move banner position.
 
-admob-setPrivacyURL=set privacy policy URL to %0 [c:mobile]
-admob-setPrivacyURL.help=Set your privacy policy URL that is used by the consent SDK.
-
 admob-showConsentForm=show consent form %0 [c:mobile]
 admob-showConsentForm.help=Show the consent form (will only appear to players in the EEA).
 
@@ -71,6 +68,9 @@ errors.appid=To enable ads in your game, your AdMob Application Identifier must 
 # deprecated
 
 admob-initialize=initialize AdMob ads with app ID %0 (set banner position to %1) [c:mobile]
+
+admob-setPrivacyURL=set privacy policy URL to %0 [c:mobile]
+admob-setPrivacyURL.help=Set your privacy policy URL that is used by the consent SDK.
 
 iad-height=height of mobile ad [c:mobile]
 iad-height.help=Height of the Mobile banner Ads - it changes based on portrait/landscape

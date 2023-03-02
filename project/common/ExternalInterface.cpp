@@ -65,12 +65,6 @@ static value admobex_banner_move(value gravity_mode){
 }
 DEFINE_PRIM(admobex_banner_move,1);
 
-static value admobex_setPrivacyURL(value url){
-    setPrivacyURL(val_string(url));
-    return alloc_null();
-}
-DEFINE_PRIM(admobex_setPrivacyURL,1);
-
 static value admobex_showConsentForm(value checkConsent){
     showConsentForm(val_bool(checkConsent));
     return alloc_null();

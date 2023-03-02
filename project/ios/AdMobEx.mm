@@ -6,17 +6,15 @@
  */
 
 #include "AdMobEx.h"
-#include <PACConsentForm.h>
-#include <PACError.h>
-#include <PACPersonalizedAdConsent.h>
-#include <PACView.h>
 #import <UIKit/UIKit.h>
 #import <AdSupport/ASIdentifierManager.h>
 #import <GoogleMobileAds/GADBannerView.h>
 #import <GoogleMobileAds/GADBannerViewDelegate.h>
-#import <GoogleMobileAds/GADInterstitial.h>
+#import <GoogleMobileAds/GADInterstitialAd.h>
 #import <GoogleMobileAds/GADMobileAds.h>
 #import <GoogleMobileAds/GADExtras.h>
+#include <CommonCrypto/CommonDigest.h>
+#include <UserMessagingPlatform/UserMessagingPlatform.h>
 
 using namespace admobex;
 
@@ -31,10 +29,10 @@ extern "C" void sendAdEvent(const char* adType, const char* adEventType);
     
 @end
 
-@interface InterstitialListener : NSObject <GADInterstitialDelegate>
+@interface InterstitialListener : NSObject<GADFullScreenContentDelegate>
 {
     @public
-    GADInterstitial *interstitial;
+    GADInterstitialAd *interstitial;
 }
 
 + (InterstitialListener*)getInterstitialListener;
@@ -79,11 +77,13 @@ extern "C" void sendAdEvent(const char* adType, const char* adEventType);
 + (BOOL)getTesting;
 + (void)setTesting:(BOOL)newTesting;
 
-+ (NSString*)getPrivacyURL;
-+ (void)setPrivacyURL:(NSString*)newURL;
-
-+ (void)getConsentInfo;
 + (void)showConsentForm:(BOOL)checkConsent;
++ (void)setupForm;
++ (NSString*)admobDeviceID;
++ (void)getConsentInfo;
++ (void)loadForm;
++ (void)showForm;
++ (BOOL)consentHasBeenChecked;
 + (GADRequest*)buildAdReq;
     
 @end
@@ -106,6 +106,7 @@ extern "C" void sendAdEvent(const char* adType, const char* adEventType);
 @implementation InterstitialListener
 
 static InterstitialListener *interstitialListener;
+static NSString* adId;
 
 + (InterstitialListener*)getInterstitialListener
 {
@@ -125,64 +126,66 @@ static InterstitialListener *interstitialListener;
     self = [super init];
     NSLog(@"AdMob Init Interstitial");
     if(!self) return nil;
-    interstitial = [[GADInterstitial alloc] initWithAdUnitID:ID];
-    interstitial.delegate = self;
-	GADRequest *request = [Consent buildAdReq];
-    [interstitial loadRequest:request];
-    
+    adId = ID;
+    [self loadAd];
     return self;
 }
 
-- (bool)isReady{
-    return (interstitial != nil && interstitial.isReady);
+- (void)loadAd
+{
+    if(![Consent consentHasBeenChecked])
+    {
+        sendAdEvent("interstitial", "fail");
+        NSLog(@"interstitialDidFailToReceiveAdWithError: User consent hasn't been checked yet");
+        return;
+    }
+    GADRequest *request = [Consent buildAdReq];
+    [GADInterstitialAd loadWithAdUnitID:adId
+                                request:request
+                      completionHandler:^(GADInterstitialAd *ad, NSError *error) {
+        if (error) {
+          sendAdEvent("interstitial", "fail");
+          NSLog(@"interstitialDidFailToReceiveAdWithError: %@", [error localizedDescription]);
+          return;
+        }
+        interstitial = ad;
+        sendAdEvent("interstitial", "load");
+        NSLog(@"interstitialDidReceiveAd");
+        interstitial.fullScreenContentDelegate = self;
+    }];
+}
+
+- (bool)isReady
+{
+    return interstitial != nil;
 }
 
 - (void)show
 {
-    if (![self isReady]) return;
+    if (!interstitial) return;
     [interstitial presentFromRootViewController:[[[UIApplication sharedApplication] keyWindow] rootViewController]];
 }
 
-/// Called when an interstitial ad request succeeded.
-- (void)interstitialDidReceiveAd:(GADInterstitial *)ad
-{
-    sendAdEvent("interstitial", "load");
-    NSLog(@"interstitialDidReceiveAd");
-}
-
-/// Called when an interstitial ad request failed.
-- (void)interstitial:(GADInterstitial *)ad didFailToReceiveAdWithError:(GADRequestError *)error
-{
-    sendAdEvent("interstitial", "fail");
-    NSLog(@"interstitialDidFailToReceiveAdWithError: %@", [error localizedDescription]);
-}
-
-/// Called just before presenting an interstitial.
-- (void)interstitialWillPresentScreen:(GADInterstitial *)ad
+- (void)adWillPresentFullScreenContent:(id)ad
 {
     sendAdEvent("interstitial", "open");
     NSLog(@"interstitialWillPresentScreen");
 }
 
-/// Called before the interstitial is to be animated off the screen.
-- (void)interstitialWillDismissScreen:(GADInterstitial *)ad
+- (void)ad:(id)ad didFailToPresentFullScreenContentWithError:(NSError *)error
 {
-    NSLog(@"interstitialWillDismissScreen");
+    NSLog(@"Ad failed to present full screen content with error %@.", [error localizedDescription]);
 }
 
-/// Called just after dismissing an interstitial and it has animated off the screen.
-- (void)interstitialDidDismissScreen:(GADInterstitial *)ad
+- (void)adDidDismissFullScreenContent:(id)ad
 {
     sendAdEvent("interstitial", "close");
     NSLog(@"interstitialDidDismissScreen");
 }
 
-/// Called just before the application will background or terminate because the user clicked on an
-/// ad that will launch another application (such as the App Store).
-- (void)interstitialWillLeaveApplication:(GADInterstitial *)ad
+- (void)adDidRecordClick:(id)ad
 {
     sendAdEvent("interstitial", "click");
-    NSLog(@"interstitialWillLeaveApplication is clicked");
 }
 
 @end
@@ -192,6 +195,7 @@ static InterstitialListener *interstitialListener;
 @synthesize bottom;
 
 static BannerListener *bannerListener;
+static BOOL firstBannerLoad = NO;
 
 + (BannerListener*)getBannerListener
 {
@@ -214,19 +218,18 @@ static BannerListener *bannerListener;
     if(!self) return nil;
     root = [[[UIApplication sharedApplication] keyWindow] rootViewController];
     
-    if( [UIApplication sharedApplication].statusBarOrientation == UIInterfaceOrientationLandscapeLeft ||
-       [UIApplication sharedApplication].statusBarOrientation == UIInterfaceOrientationLandscapeRight )
-    {
-        bannerView = [[GADBannerView alloc] initWithAdSize:kGADAdSizeSmartBannerLandscape];
-    }else{
-        bannerView = [[GADBannerView alloc] initWithAdSize:kGADAdSizeSmartBannerPortrait];
-    }
+    GADAdSize adSize = [self getFullWidthAdaptiveAdSize];
+    bannerView = [[GADBannerView alloc] initWithAdSize:adSize];
     
     bannerView.adUnitID = bannerID;
     bannerView.rootViewController = root;
     
-	GADRequest *request = [Consent buildAdReq];
-    [bannerView loadRequest:request];
+    if([Consent consentHasBeenChecked])
+    {
+        firstBannerLoad = YES;
+        GADRequest *request = [Consent buildAdReq];
+        [bannerView loadRequest:request];
+    }
     bannerView.translatesAutoresizingMaskIntoConstraints = NO;
     [root.view addSubview:bannerView];
     
@@ -236,6 +239,14 @@ static BannerListener *bannerListener;
     [self setPosition:GMODE];
     
     return self;
+}
+
+- (GADAdSize)getFullWidthAdaptiveAdSize {
+  CGRect frame = root.view.frame;
+  if (@available(iOS 11.0, *)) {
+    frame = UIEdgeInsetsInsetRect(root.view.frame, root.view.safeAreaInsets);
+  }
+  return GADCurrentOrientationAnchoredAdaptiveBannerAdSizeWithWidth(frame.size.width);
 }
 
 -(void)setPosition:(NSString*)position
@@ -319,6 +330,10 @@ static BannerListener *bannerListener;
 
 -(void)showBannerAd
 {
+    if(!firstBannerLoad)
+    {
+        [self reloadBanner];
+    }
     bannerView.hidden=false;
 }
 
@@ -329,43 +344,47 @@ static BannerListener *bannerListener;
 
 -(void)reloadBanner
 {
-	GADRequest *request = [Consent buildAdReq];
+	if(![Consent consentHasBeenChecked])
+    {
+        sendAdEvent("banner", "fail");
+        NSLog(@"AdMob: banner failed to load: User consent hasn't been checked yet");
+        return;
+    }
+    firstBannerLoad = YES;
+    GADRequest *request = [Consent buildAdReq];
     [bannerView loadRequest:request];
 }
 
 /// Called when an banner ad request succeeded.
-- (void)adViewDidReceiveAd:(GADBannerView *)bannerView
+- (void)bannerViewDidReceiveAd:(GADBannerView *)bannerView
 {
     sendAdEvent("banner", "load");
     NSLog(@"AdMob: banner ad successfully loaded!");
 }
 
 /// Called when an banner ad request failed.
-- (void)adView:(GADBannerView *)bannerView didFailToReceiveAdWithError:(GADRequestError *)error
+- (void)bannerView:(GADBannerView *)bannerView didFailToReceiveAdWithError:(nonnull NSError *)error
 {
     sendAdEvent("banner", "fail");
     NSLog(@"AdMob: banner failed to load...");
 }
 
-- (void)adViewWillPresentScreen:(GADBannerView *)bannerView
+- (void)bannerViewWillPresentScreen:(GADBannerView *)bannerView
 {
     sendAdEvent("banner", "open");
     NSLog(@"AdMob: banner was opened.");
 }
 
 /// Called before the banner is to be animated off the screen.
-- (void)adViewWillDismissScreen:(GADBannerView *)bannerView
+- (void)bannerViewWillDismissScreen:(GADBannerView *)bannerView
 {
     sendAdEvent("banner", "close");
     NSLog(@"AdMob: banner was closed.");
 }
 
-/// Called just before the application will background or terminate because the user clicked on an
-/// ad that will launch another application (such as the App Store).
-- (void)adViewWillLeaveApplication:(GADBannerView *)bannerView
+- (void)bannerViewDidRecordClick:(GADBannerView *)bannerView
 {
     sendAdEvent("banner", "click");
-    NSLog(@"AdMob: banner made the user leave the game. is clicked");
 }
 
 @end
@@ -374,7 +393,9 @@ static BannerListener *bannerListener;
 
 static NSString *publisherID;
 static BOOL testing = NO;
-static NSString *privacyURL;
+static BOOL showWhenLoaded = NO;
+static BOOL consentChecked = NO;
+static UMPConsentForm* consentForm;
 
 + (NSString*)getPublisherID
 {
@@ -397,142 +418,128 @@ static NSString *privacyURL;
 	testing = newTesting;
 }
 
-+ (NSString*)getPrivacyURL
++ (void)showConsentForm:(BOOL)checkConsent
 {
-	return privacyURL;
+    NSLog(@"consentsdk: showConsentForm");
+    
+    if (checkConsent && UMPConsentInformation.sharedInstance.consentStatus == UMPConsentStatusObtained)
+    {
+        NSLog(@"consentsdk: Skipping form because player already answered");
+        consentChecked = YES;
+        return;
+    }
+    
+    showWhenLoaded = YES;
+    
+    if (consentForm != nil)
+    {
+        [self showForm];
+    }
+    else
+    {
+        [self setupForm];
+    }
 }
-+ (void)setPrivacyURL:(NSString*)newURL
+
++ (void)setupForm
 {
-	if (privacyURL != newURL)
-	{
-		privacyURL = [newURL copy];
-	}
+    UMPRequestParameters *parameters = [[UMPRequestParameters alloc] init];
+    parameters.tagForUnderAgeOfConsent = NO;
+    if(testing)
+    {
+        UMPDebugSettings* debugSettings = [[UMPDebugSettings alloc] init];
+        debugSettings.geography = UMPDebugGeographyEEA;
+        debugSettings.testDeviceIdentifiers = @[[self admobDeviceID]];
+        parameters.debugSettings = debugSettings;
+    }
+
+    [UMPConsentInformation.sharedInstance
+        requestConsentInfoUpdateWithParameters:parameters
+                             completionHandler:^(NSError *_Nullable error) {
+        if (error) {
+            NSLog(@"consentsdk: consent update failed with error: %@", [error localizedDescription]);
+        } else {
+            UMPFormStatus formStatus = UMPConsentInformation.sharedInstance.formStatus;
+            if (formStatus == UMPFormStatusAvailable) {
+                [self loadForm];
+            } else {
+                consentChecked = YES;
+                NSLog(@"consentsdk: no consent form available");
+            }
+        }
+    }];
+}
+
+// https://stackoverflow.com/a/25012633
++ (NSString *)admobDeviceID
+{
+    NSUUID* adid = [[ASIdentifierManager sharedManager] advertisingIdentifier];
+    const char *cStr = [adid.UUIDString UTF8String];
+    unsigned char digest[16];
+    CC_MD5(cStr, strlen(cStr), digest);
+
+    NSMutableString *output = [NSMutableString stringWithCapacity:CC_MD5_DIGEST_LENGTH * 2];
+
+    for(int i = 0; i < CC_MD5_DIGEST_LENGTH; i++)
+        [output appendFormat:@"%02x", digest[i]];
+
+    return output;
 }
 
 + (void)getConsentInfo
 {
-	NSLog(@"consentsdk: getConsentInfo");
-	
-	if (testing)
-	{
-		PACConsentInformation.sharedInstance.debugIdentifiers = @[ ASIdentifierManager.sharedManager.advertisingIdentifier.UUIDString ];
-		PACConsentInformation.sharedInstance.debugGeography = PACDebugGeographyEEA;
-	}
-	[PACConsentInformation.sharedInstance
-		requestConsentInfoUpdateForPublisherIdentifiers:@[ publisherID ]
-			completionHandler:^(NSError *_Nullable error)
-			{
-				if (error)
-				{
-					NSLog(@"consentsdk: Consent info update failed with error: %@", error);
-				}
-				else
-				{
-					NSLog(@"consentsdk: Consent info update succeeded.");
-					
-					GADRequest *request = [Consent buildAdReq];
-					
-					InterstitialListener *interstitialListener = [InterstitialListener getInterstitialListener];
-					if(interstitialListener)
-					{
-						[interstitialListener->interstitial loadRequest:request];
-					}
-					BannerListener *bannerListener = [BannerListener getBannerListener];
-					if (bannerListener)
-					{
-						[bannerListener->bannerView loadRequest:request];
-					}
-				}
-			}];
+    NSLog(@"consentsdk: getConsentInfo");
+    
+    if (UMPConsentInformation.sharedInstance.consentStatus == UMPConsentStatusObtained)
+    {
+        NSLog(@"consentsdk: Skipping form because player already answered");
+        consentChecked = YES;
+        return;
+    }
+    
+    showWhenLoaded = NO;
+    [self setupForm];
 }
 
-+ (void)showConsentForm:(BOOL)checkConsent
++ (void)loadForm {
+    consentForm = nil;
+    
+    [UMPConsentForm loadWithCompletionHandler:^(UMPConsentForm *form,
+                                              NSError *loadError) {
+    if (loadError) {
+        NSLog(@"consentsdk: Form load failed with error: %@", [loadError localizedDescription]);
+    } else {
+        NSLog(@"consentsdk: Form has loaded.");
+        consentForm = form;
+        if(showWhenLoaded)
+        {
+            [self showForm];
+        }
+    }
+  }];
+}
+
++ (void) showForm {
+    showWhenLoaded = false;
+    UIViewController *root = [[[UIApplication sharedApplication] keyWindow] rootViewController];
+    [consentForm
+        presentFromViewController:root
+                completionHandler:^(NSError *_Nullable dismissError) {
+        [self loadForm];
+        NSLog(@"consentsdk: consent form closed");
+        consentChecked = YES;
+    }];
+}
+
++ (BOOL)consentHasBeenChecked
 {
-	NSLog(@"consentsdk: showConsentForm");
-
-	if (checkConsent &&
-		(PACConsentInformation.sharedInstance.consentStatus == PACConsentStatusPersonalized ||
-		PACConsentInformation.sharedInstance.consentStatus == PACConsentStatusNonPersonalized))
-	{
-		NSLog(@"consentsdk: Skipping form because player already answered");
-		return;
-	}
-
-	NSURL *pURL = [NSURL URLWithString:privacyURL];
-	PACConsentForm *form = [[PACConsentForm alloc] initWithApplicationPrivacyPolicyURL:pURL];
-	form.shouldOfferPersonalizedAds = YES;
-	form.shouldOfferNonPersonalizedAds = YES;
-	form.shouldOfferAdFree = NO;
-	
-	[form loadWithCompletionHandler:^(NSError *_Nullable error) {
-		if (error)
-		{
-			NSLog(@"consentsdk: Form load failed with error: %@", error);
-		}
-		else
-		{
-			NSLog(@"consentsdk: Form has loaded.");
-			UIViewController *root = [[[UIApplication sharedApplication] keyWindow] rootViewController];
-			
-			[form presentFromViewController:root
-				dismissCompletion:^(NSError *_Nullable error, BOOL userPrefersAdFree)
-				{
-					if (error)
-					{
-						NSLog(@"consentsdk: Show form failed with error: %@", error);
-					}
-					else if (userPrefersAdFree)
-					{
-						NSLog(@"consentsdk: user prefers ad free");
-					}
-					else
-					{
-						NSLog(@"consentsdk: setting consent status");
-						PACConsentStatus status = PACConsentInformation.sharedInstance.consentStatus;
-						
-						GADRequest *request = [Consent buildAdReq];
-					
-						InterstitialListener *interstitialListener = [InterstitialListener getInterstitialListener];
-						if(interstitialListener)
-						{
-							[interstitialListener->interstitial loadRequest:request];
-						}
-						BannerListener *bannerListener = [BannerListener getBannerListener];
-						if (bannerListener)
-						{
-							[bannerListener->bannerView loadRequest:request];
-						}
-					}
-				}];
-		}
-	}];
+    return consentChecked;
 }
 
 + (GADRequest*)buildAdReq
 {
 	GADRequest *request = [GADRequest request];
-	request.testDevices = @[ kGADSimulatorID ];
 
-    BOOL npa = NO;
-	if (PACConsentInformation.sharedInstance.requestLocationInEEAOrUnknown)
-	{
-		if (PACConsentInformation.sharedInstance.consentStatus != PACConsentStatusPersonalized)
-		{
-			npa = YES;
-			GADExtras *extras = [[GADExtras alloc] init];
-			extras.additionalParameters = @{@"npa": @"1"};
-			[request registerAdNetworkExtras:extras];
-		}
-	}
-	if (npa)
-	{
-		NSLog(@"consentsdk: building ad request with non-personlized ads");
-	}
-	else
-	{
-		NSLog(@"consentsdk: building ad request with personlized ads");
-	}
-	
 	return request;
 }
     
@@ -554,6 +561,8 @@ namespace admobex {
         
         NSString *pubID = [[admobID componentsSeparatedByString:@"~"] objectAtIndex:0];
         [Consent setPublisherID:pubID];
+        [Consent setTesting:testingAds];
+        [Consent getConsentInfo];
 
         if(testingAds){
             admobID = @"ca-app-pub-3940256099942544~1458002511"; // ADMOB GENERIC TESTING appID
@@ -574,9 +583,6 @@ namespace admobex {
             interstitialListener = [[InterstitialListener alloc] initWithID:interstitialID];
             [InterstitialListener setInterstitialListener:interstitialListener];
         }
-
-		[Consent setTesting:testingAds];
-		[Consent getConsentInfo];
     }
     
     void setBannerPosition(const char *gravityMode)
@@ -622,11 +628,6 @@ namespace admobex {
     void showInterstitial()
     {
         if(interstitialListener!=NULL) [interstitialListener show];
-    }
-	
-    void setPrivacyURL(const char *url)
-    {
-		[Consent setPrivacyURL:[NSString stringWithUTF8String:url]];
     }
 	
     void showConsentForm(bool checkConsent)

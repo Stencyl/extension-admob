@@ -16,7 +16,6 @@
 	        <block tag="admob-reinit-banner" />
 	        <block tag="admob-setbanner-position" />
 			<block tag="iad-height" />
-			<block tag="admob-setPrivacyURL" />
 			<block tag="admob-showConsentForm" />
 		</merge-section>
 	</palette-addon>
