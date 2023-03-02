@@ -93,7 +93,7 @@ class AdMob extends Extension
 		#if ios
 		try{
 			// CPP METHOD LINKING
-			var __init = cpp.Lib.load("adMobEx","admobex_init",5);
+			var __init = cpp.Lib.load("adMobEx","admobex_init",4);
 			var set_ad_event_handle = cpp.Lib.load("adMobEx", "ads_set_ad_event_handle", 1);
 			__showBanner = cpp.Lib.load("adMobEx","admobex_banner_show",0);
 			__hideBanner = cpp.Lib.load("adMobEx","admobex_banner_hide",0);
@@ -107,7 +107,7 @@ class AdMob extends Extension
 			__setUnderAgeOfConsent = cpp.Lib.load("admobex","admobex_setTagForUnderAgeOfConsent",1);
 			__setMaxAdContentRating = cpp.Lib.load("admobex","admobex_setMaxAdContentRating",1);
 
-			__init("",AdmobConfig.iosBannerKey,AdmobConfig.iosInterstitialKey,gravityMode,AdmobConfig.enableTestAds);
+			__init(AdmobConfig.iosBannerKey,AdmobConfig.iosInterstitialKey,gravityMode,AdmobConfig.enableTestAds);
 			set_ad_event_handle(onAdmobAdEvent);
 		}catch(e:Dynamic){
 			trace("iOS INIT Exception: "+e);
@@ -129,11 +129,10 @@ class AdMob extends Extension
 			__setUnderAgeOfConsent = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "setTagForUnderAgeOfConsent", "(Ljava/lang/String;)V");
 			__setMaxAdContentRating = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "setMaxAdContentRating", "(Ljava/lang/String;)V");
 
-			var _init_func = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "init", "(Lorg/haxe/lime/HaxeObject;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Z)V", true);
+			var _init_func = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "init", "(Lorg/haxe/lime/HaxeObject;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Z)V", true);
 	
 			var args = new Array<Dynamic>();
 			args.push(instance);
-			args.push("");
 			args.push(AdmobConfig.androidBannerKey);
 			args.push(AdmobConfig.androidInterstitialKey);
 			args.push(gravityMode);

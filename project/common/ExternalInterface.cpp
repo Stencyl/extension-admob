@@ -23,11 +23,11 @@ static void ads_set_ad_event_handle(value onEvent)
 }
 DEFINE_PRIM(ads_set_ad_event_handle, 1);
 
-static value admobex_init(value admob_id, value banner_id, value interstitial_id, value gravity_mode, value testing_ads){
-	init(val_string(admob_id),val_string(banner_id),val_string(interstitial_id), val_string(gravity_mode), val_bool(testing_ads));
+static value admobex_init(value banner_id, value interstitial_id, value gravity_mode, value testing_ads){
+	init(val_string(banner_id),val_string(interstitial_id), val_string(gravity_mode), val_bool(testing_ads));
 	return alloc_null();
 }
-DEFINE_PRIM(admobex_init,5);
+DEFINE_PRIM(admobex_init,4);
 
 static value admobex_banner_show(){
 	showBanner();

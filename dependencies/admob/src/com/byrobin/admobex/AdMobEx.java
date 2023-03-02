@@ -133,7 +133,7 @@ public class AdMobEx extends Extension {
 		return instance;
 	}
 
-	static public void init(HaxeObject cb, String admobId, String bannerId, String interstitialId, String gravityMode, boolean testingAds){
+	static public void init(HaxeObject cb, String bannerId, String interstitialId, String gravityMode, boolean testingAds){
         
         callback = cb;
         AdMobEx.admobId=mainActivity.getResources().getString(R.string.admob_app_id);
