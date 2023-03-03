@@ -84,9 +84,10 @@ events.defs.ads.reward=Ad Reward
 mobile.settings.money.admob=AdMob Ads
 
 fields.enableAdmobAds.label=Enable Admob Ads
-fields.enableAdmobAds.hint=To use Admob in your game, you must enable Admob first. If it's disabled the blocks and Testads will not be working.
+fields.enableAdmobAds.hint=To use Admob in your game, you must enable Admob first. If it's disabled, the blocks and test ads will not work.
 
 fields.enableTestAds.label=Enable Test Ads
+fields.enableTestConsent.label=Enable Test Consent Forms
 
 mobile.settings.money.admob.ios=AdMob Ads - iOS
 mobile.settings.money.admob.android=AdMob Ads - Android

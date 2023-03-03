@@ -6,24 +6,136 @@ import openfl.Lib;
 import lime.system.JNI;
 #end
 
+import com.stencyl.admob.Listeners;
 import com.stencyl.Config;
 import com.stencyl.Engine;
 import com.stencyl.Extension;
 import com.stencyl.event.Event;
+import com.stencyl.utils.Utils;
 
 using com.stencyl.event.EventDispatcher;
 
 #if ios
 @:buildXml('<include name="${haxelib:com.stencyl.admob}/project/Build.xml"/>')
-//This is just here to prevent the otherwise indirectly referenced native code from bring stripped at link time.
+//This is just here to prevent the otherwise indirectly referenced native code from being stripped at link time.
 @:cppFileCode('extern "C" int admobex_register_prims();void com_stencyl_admobex_link(){admobex_register_prims();}')
 #end
 class AdMob extends Extension
+	implements OnConsentInfoUpdateListener
+	implements OnConsentFormLoadListener
+	implements OnConsentFormDismissedListener
+	implements OnInitializationCompleteListener
+	implements OnUserEarnedRewardListener
 {
+	private static var instance:AdMob;
+	private static var sdkInitializing:Bool = false;
+	private static var sdkInitialized:Bool = false;
+	private static var debugLogs:Bool = false;
+	private static inline final NULL_FOREIGN_REF = -1;
+	
+	//banner
+	private static var bannerRef:Int = NULL_FOREIGN_REF;
+	private static var bannerPosition:String;
+	private static var loadingBanner:Bool = false;
+	private static var bannerFailed:Bool = false;
+	private static var bannerShouldBeVisible:Bool = false;
+	private static var bannerHeight:Int = 0;
+
+	//interstitial
+	private static var interstitialRef:Int = NULL_FOREIGN_REF;
+
+	//rewarded
+	private static var rewardedRef:Int = NULL_FOREIGN_REF;
+
+	//consent form and ad requests
+	private static var debugGeography:String = "";
+	private static var childDirected = "";
+	private static var underAgeOfConsent = "";
+	private static var maxAdContentRating = "";
+
+	//state management -- enforce the collection of user consent before initializing the sdk
+	private static var processingForm = false;
+	private static var consentChecked = false;
+	private static var alwaysShowConsentForm = false;
+	private static var wantToInitSdk = false;
+
+	//constants
+	#if (android && testing)
+	private static final testBannerKey       = "ca-app-pub-3940256099942544/6300978111";
+	private static final testInterstitialKey = "ca-app-pub-3940256099942544/1033173712";
+	private static final testRewardedKey     = "ca-app-pub-3940256099942544/5224354917";
+	#elseif (ios && testing)
+	private static final testBannerKey       = "ca-app-pub-3940256099942544/2934735716";
+	private static final testInterstitialKey = "ca-app-pub-3940256099942544/5135589807";
+	private static final testRewardedKey     = "ca-app-pub-3940256099942544/1712485313";
+	#end
+
+	//stencyl events
+	public var adEvent:Event<(AdEventData)->Void> = new Event<(AdEventData)->Void>();
+	public var rewardEvent:Event<(rewardType:String, rewardAmount:Float)->Void> = new Event<(String,Float)->Void>();
+	public var nativeEventQueue:Array<AdEventData> = [];
+	
+	///////////////////////////////////////////////////////////////////////////
+	
+	private static var __setupConsentForm:(testingConsent:Bool, debugGeography:String, underAgeOfConsent:String, callbacks:OnConsentInfoUpdateListener)->Void;
+	private static var __loadConsentForm:(callbacks:OnConsentFormLoadListener)->Void;
+	private static var __showConsentForm:(callbacks:OnConsentFormDismissedListener)->Void;
+	private static var __initSdk:(callbacks:OnInitializationCompleteListener)->Void;
+	private static var __updateRequestConfig:(childDirected:String, underAgeOfConsent:String, maxAdContentRating:String)->Void;
+	private static var __initBanner:(bannerId:String, visible:Bool, position:String, callbacks:AdListener)->Int;
+	private static var __loadBanner:(bannerRef:Int)->Void;
+	private static var __showBanner:(bannerRef:Int)->Void;
+	private static var __hideBanner:(bannerRef:Int)->Void;
+	private static var __setBannerPosition:(bannerRef:Int, position:String)->Void;
+	private static var __disposeBanner:(bannerRef:Int)->Void;
+	private static var __loadInterstitial:(interstitialId:String, callbacks:AdLoadCallback)->Void;
+	private static var __showInterstitial:(interstitialRef:Int)->Void;
+	private static var __loadRewarded:(rewardedId:String, callbacks:AdLoadCallback)->Void;
+	private static var __showRewarded:(rewardedRef:Int, callbacks:OnUserEarnedRewardListener)->Void;
+	private static var __setContentCallback:(adRef:Int, callbacks:FullScreenContentCallback)->Void;
+	private static var __clearReference:(ref:Int)->Void;
+	
+	///////////////////////////////////////////////////////////////////////////
+	
 	public function new()
 	{
 		super();
 		instance = this;
+		AdmobConfig.load();
+
+		#if android
+		javaInstance = JNI.createStaticField("com/byrobin/admobex/AdMobEx", "instance", "Lcom/byrobin/admobex/AdMobEx;").get();
+		var s = "Ljava/lang/String;";
+		var o = "Lorg/haxe/lime/HaxeObject;";
+		#end
+		
+		var __initConfig            = loadFunction2("initConfig"                      #if android , '(ZZ)V'        #end);
+		var __resetConsent          = loadFunction0("resetConsent"                    #if android , '()V'          #end);
+		__setupConsentForm          = loadFunction4("setupConsentForm"                #if android , '(Z$s$s$o)V'   #end);
+		__loadConsentForm           = loadFunction1("loadConsentForm"                 #if android , '($o)V'        #end);
+		__showConsentForm           = loadFunction1("showConsentForm"                 #if android , '($o)V'        #end);
+		__initSdk                   = loadFunction1("initSdk"                         #if android , '($o)V'        #end);
+		__updateRequestConfig       = loadFunction3("updateRequestConfig"             #if android , '($s$s$s)V'    #end);
+		__initBanner                = loadFunction4("initBanner"                      #if android , '(${s}Z$s$o)I' #end);
+		__loadBanner                = loadFunction1("loadBanner"                      #if android , '(I)V'         #end);
+		__showBanner                = loadFunction1("showBanner"                      #if android , '(I)V'         #end);
+		__hideBanner                = loadFunction1("hideBanner"                      #if android , '(I)V'         #end);
+		__setBannerPosition         = loadFunction2("setBannerPosition"               #if android , '(I$s)V'       #end);
+		__disposeBanner             = loadFunction1("disposeBanner"                   #if android , '(I)V'         #end);
+		__loadInterstitial          = loadFunction2("loadInterstitial"                #if android , '($s$o)V'      #end);
+		__showInterstitial          = loadFunction1("showInterstitial"                #if android , '(I)V'         #end);
+		__loadRewarded              = loadFunction2("loadRewarded"                    #if android , '($s$o)V'      #end);
+		__showRewarded              = loadFunction2("showRewarded"                    #if android , '(I$o)V'       #end);
+		__setContentCallback        = loadFunction2("setFullScreenContentCallback"    #if android , '(I$o)V'       #end);
+		__clearReference            = loadFunction1("clearReference"                  #if android , '(I)V'         #end);
+		
+		debugLogs = #if testing true #else false #end;
+		tryRun(() -> __initConfig(AdmobConfig.enableTestAds, debugLogs));
+
+		if(AdmobConfig.enableTestConsent)
+		{
+			tryRun(() -> __resetConsent());
+		}
 	}
 
 	public static function get()
@@ -31,273 +143,282 @@ class AdMob extends Extension
 		return instance;
 	}
 
-	public var adEvent:Event<(AdEventData)->Void> = new Event<(AdEventData)->Void>();
-	public var rewardEvent:Event<(rewardType:String, rewardAmount:Float)->Void> = new Event<(String,Float)->Void>();
-	public var nativeEventQueue:Array<AdEventData> = [];
-	
-	private static var initialized:Bool=false;
-	private static var instance:AdMob;
-	private static var testingAds:Bool=false;
-	private static var gravityMode:String;
-
-	///////////////////////////////////////////////////////////////////////////
-	
-	private static var __showBanner:Void->Void = function(){};
-	private static var __hideBanner:Void->Void = function(){};
-	private static var __loadInterstitial:Void->Void = function(){};
-	private static var __showInterstitial:Void->Void = function(){};
-	private static var __loadRewarded:Void->Void = function(){};
-	private static var __showRewarded:Void->Void = function(){};
-	private static var __onResize:Void->Void = function(){};
-	private static var __refresh:Void->Void = function(){};
-	private static var __setBannerPosition:String->Void = function(gravityMode:String){};
-	private static var __showConsentForm:Bool->Void = function(checkConsent:Bool){};
-	private static var __setDebugGeography:String->Void = function(value:String){};
-	private static var __setChildDirectedTreatment:String->Void = function(value:String){};
-	private static var __setUnderAgeOfConsent:String->Void = function(value:String){};
-	private static var __setMaxAdContentRating:String->Void = function(value:String){};
+	private static inline function debugLog(msg:String, ?pos:haxe.PosInfos)
+	{
+		if(debugLogs) trace(msg, pos);
+	}
 	
 	////////////////////////////////////////////////////////////////////////////
 
-	private static var lastTimeInterstitial:Int = -60*1000;
-	private static var displayCallsCounter:Int = 0;
-
-	////////////////////////////////////////////////////////////////////////////
-	
-	public static function loadInterstitial() {
-		try{
-			__loadInterstitial();
-		}catch(e:Dynamic){
-			trace("LoadInterstitial Exception: "+e);
-		}
-	}
-	
-	public static function showInterstitial() {
-		try{
-			__showInterstitial();
-		}catch(e:Dynamic){
-			trace("ShowInterstitial Exception: "+e);
-		}
+	//Called from Design Mode
+	public static function setDebugGeography(value:String)
+	{
+		debugLog('setDebugGeography($value)');
+		debugGeography = value;
 	}
 
-	public static function loadRewarded() {
-		try{
-			__loadRewarded();
-		}catch(e:Dynamic){
-			trace("LoadRewarded Exception: "+e);
-		}
-	}
-	
-	public static function showRewarded() {
-		try{
-			__showRewarded();
-		}catch(e:Dynamic){
-			trace("ShowRewarded Exception: "+e);
-		}
-	}
-	
-	public static function init(position:Int){
-		if(position == 1)
-		{
-			gravityMode = "TOP";
-		}else
-		{
-			gravityMode = "BOTTOM";
-		}
-	
-		if(initialized) return;
-		initialized = true;
-		AdmobConfig.load();
+	//Called from Design Mode
+	public static function setChildDirectedTreatment(value:String)
+	{
+		debugLog('setChildDirectedTreatment($value)');
+		childDirected = value;
 
-		#if ios
-		try{
-			// CPP METHOD LINKING
-			var __init = cpp.Lib.load("adMobEx","admobex_init",5);
-			var set_ad_event_handle = cpp.Lib.load("adMobEx", "ads_set_ad_event_handle", 1);
-			var set_reward_event_handle = cpp.Lib.load("adMobEx", "ads_set_reward_event_handle", 1);
-			__showBanner = cpp.Lib.load("adMobEx","admobex_banner_show",0);
-			__hideBanner = cpp.Lib.load("adMobEx","admobex_banner_hide",0);
-			__loadInterstitial = cpp.Lib.load("admobex","admobex_interstitial_load",0);
-			__showInterstitial = cpp.Lib.load("admobex","admobex_interstitial_show",0);
-			__loadRewarded = cpp.Lib.load("admobex","admobex_rewarded_load",0);
-			__showRewarded = cpp.Lib.load("admobex","admobex_rewarded_show",0);
-			__refresh = cpp.Lib.load("adMobEx","admobex_banner_refresh",0);
-			__setBannerPosition = cpp.Lib.load("admobex","admobex_banner_move",1);
-			__showConsentForm = cpp.Lib.load("admobex","admobex_showConsentForm",1);
-			__setDebugGeography = cpp.Lib.load("admobex","admobex_setDebugGeography",1);
-			__setChildDirectedTreatment = cpp.Lib.load("admobex","admobex_setTagForChildDirectedTreatment",1);
-			__setUnderAgeOfConsent = cpp.Lib.load("admobex","admobex_setTagForUnderAgeOfConsent",1);
-			__setMaxAdContentRating = cpp.Lib.load("admobex","admobex_setMaxAdContentRating",1);
-
-			__init(AdmobConfig.iosBannerKey,AdmobConfig.iosInterstitialKey,AdmobConfig.iosRewardedKey,gravityMode,AdmobConfig.enableTestAds);
-			set_ad_event_handle(onAdmobAdEvent);
-			set_reward_event_handle(onAdmobRewardEvent);
-		}catch(e:Dynamic){
-			trace("iOS INIT Exception: "+e);
-		}
-		#end
-		
-		#if android
-		try{
-			// JNI METHOD LINKING
-			__showBanner = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "showBanner", "()V");
-			__hideBanner = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "hideBanner", "()V");
-			__loadInterstitial = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "loadInterstitial", "()V");
-			__showInterstitial = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "showInterstitial", "()V");
-			__loadRewarded = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "loadRewarded", "()V");
-			__showRewarded = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "showRewarded", "()V");
-			__onResize = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "onResize", "()V");
-			__setBannerPosition = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "setBannerPosition", "(Ljava/lang/String;)V");
-			__showConsentForm = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "showConsentForm", "(Z)V");
-			__setDebugGeography = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "setDebugGeography", "(Ljava/lang/String;)V");
-			__setChildDirectedTreatment = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "setTagForChildDirectedTreatment", "(Ljava/lang/String;)V");
-			__setUnderAgeOfConsent = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "setTagForUnderAgeOfConsent", "(Ljava/lang/String;)V");
-			__setMaxAdContentRating = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "setMaxAdContentRating", "(Ljava/lang/String;)V");
-
-			var _init_func = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "init", "(Lorg/haxe/lime/HaxeObject;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Z)V", true);
-	
-			var args = new Array<Dynamic>();
-			args.push(instance);
-			args.push(AdmobConfig.androidBannerKey);
-			args.push(AdmobConfig.androidInterstitialKey);
-			args.push(AdmobConfig.androidRewardedKey);
-			args.push(gravityMode);
-			args.push(AdmobConfig.enableTestAds);
-			_init_func(args);
-		}catch(e:Dynamic){
-			trace("Android INIT Exception: "+e);
-		}
-		#end
-	}
-	
-	public static function showBanner() {
-		try {
-			__showBanner();
-			instance.nativeEventQueue.push(AdEvent(BANNER, OPENED));
-		} catch(e:Dynamic) {
-			trace("ShowAd Exception: "+e);
-		}
-	}
-	
-	public static function hideBanner() {
-		try {
-			__hideBanner();
-			instance.nativeEventQueue.push(AdEvent(BANNER, CLOSED));
-		} catch(e:Dynamic) {
-			trace("HideAd Exception: "+e);
-		}
-	}
-	
-	public static function onResize() {
-	
-		#if ios
-		try{
-			__refresh();
-		}catch(e:Dynamic){
-			trace("onResize Exception: "+e);
-		}
-		#end
-		#if android
-		try{
-			__onResize();
-		}catch(e:Dynamic){
-			trace("onResize Exception: "+e);
-		}
-		#end
-	}
-	
-	public static function setBannerPosition(position:Int) {
-	
-		if(position == 1)
-		{
-			gravityMode = "TOP";
-		}else
-		{
-			gravityMode = "BOTTOM";
-		}
-		
-		try{
-			__setBannerPosition(gravityMode);
-		}catch(e:Dynamic){
-			trace("setBannerPosition Exception: "+e);
-		}
+		if(sdkInitialized)
+			tryRun(() -> __updateRequestConfig(childDirected, underAgeOfConsent, maxAdContentRating));
 	}
 
-	public static function setDebugGeography(value:String) {
-		try{
-			__setDebugGeography(value);
-		}catch(e:Dynamic){
-			trace("setDebugGeography Exception: "+e);
-		}
+	//Called from Design Mode
+	public static function setUnderAgeOfConsent(value:String)
+	{
+		debugLog('setUnderAgeOfConsent($value)');
+		underAgeOfConsent = value;
+
+		if(sdkInitialized)
+			tryRun(() -> __updateRequestConfig(childDirected, underAgeOfConsent, maxAdContentRating));
 	}
 
-	public static function setChildDirectedTreatment(value:String) {
-		try{
-			__setChildDirectedTreatment(value);
-		}catch(e:Dynamic){
-			trace("setChildDirectedTreatment Exception: "+e);
-		}
+	//Called from Design Mode
+	public static function setMaxAdContentRating(value:String)
+	{
+		debugLog('setMaxAdContentRating($value)');
+		maxAdContentRating = value;
+
+		if(sdkInitialized)
+			tryRun(() -> __updateRequestConfig(childDirected, underAgeOfConsent, maxAdContentRating));
 	}
 
-	public static function setUnderAgeOfConsent(value:String) {
-		try{
-			__setUnderAgeOfConsent(value);
-		}catch(e:Dynamic){
-			trace("setUnderAgeOfConsent Exception: "+e);
-		}
-	}
-
-	public static function setMaxAdContentRating(value:String) {
-		try{
-			__setMaxAdContentRating(value);
-		}catch(e:Dynamic){
-			trace("setMaxAdContentRating Exception: "+e);
-		}
-	}
-	
+	//Called from Design Mode
 	public static function showConsentForm(checkConsent:Bool = true)
 	{
-		try{
-			__showConsentForm(checkConsent);
-		}catch(e:Dynamic){
-			trace("showConsentForm Exception: "+e);
+		debugLog('showConsentForm($checkConsent)');
+		alwaysShowConsentForm = !checkConsent;
+		if(processingForm) return;
+
+		processingForm = true;
+		tryRun(() -> __setupConsentForm(AdmobConfig.enableTestConsent, debugGeography, underAgeOfConsent, instance));
+	}
+
+	//OnConsentInfoUpdateListener
+	public function onConsentInfoUpdateSuccess(formAvailable:Bool):Void
+	{
+		debugLog('onConsentInfoUpdateSuccess($formAvailable)');
+		if(formAvailable)
+		{
+			tryRun(() -> __loadConsentForm(instance));
+		}
+		else
+		{
+			consentChecked = true;
+			processingForm = false;
+			if(wantToInitSdk) finishInitSdk();
+		}
+	}
+
+	//OnConsentInfoUpdateListener
+	public function onConsentInfoUpdateFailure(formError:String):Void
+	{
+		debugLog('onConsentInfoUpdateFailure($formError)');
+		processingForm = false;
+	}
+
+	//OnConsentFormLoadListener
+	public function onConsentFormLoadSuccess():Void
+	{
+		debugLog('onConsentFormLoadSuccess()');
+		tryRun(() -> __showConsentForm(instance));
+	}
+
+	//OnConsentFormLoadListener
+    public function onConsentFormLoadFailure(formError:String):Void
+	{
+		debugLog('onConsentFormLoadFailure($formError)');
+		processingForm = false;
+	}
+
+	//OnConsentFormDismissedListener
+	public function onConsentFormDismissed(formError:String):Void
+	{
+		debugLog('onConsentFormDismissed($formError)');
+		processingForm = false;
+		if(formError != "")
+		{
+			return;
+		}
+
+		consentChecked = true;
+		if(wantToInitSdk) finishInitSdk();
+	}
+	
+	//Called from Design Mode
+	public static function initSdk(position:Int)
+	{
+		debugLog('initSdk($position)');
+		if(sdkInitializing || sdkInitialized) return;
+		bannerPosition = if(position == 1) "TOP" else "BOTTOM";
+
+		if(!consentChecked)
+		{
+			wantToInitSdk = true;
+			showConsentForm(!alwaysShowConsentForm);
+			return;
+		}
+
+		tryRun(() -> __initSdk(instance));
+	}
+
+	//Called after consent has been determined if wantToInitSdk has been set
+	private static function finishInitSdk()
+	{
+		debugLog('finishInitSdk()');
+		
+		wantToInitSdk = false;
+		tryRun(() -> __initSdk(instance));
+	}
+
+	//OnInitializationCompleteListener
+	public function onInitializationComplete():Void
+	{
+		debugLog('onInitializationComplete()');
+		
+		sdkInitializing = false;
+		sdkInitialized = true;
+
+		tryRun(() -> __updateRequestConfig(childDirected, underAgeOfConsent, maxAdContentRating));
+
+		var bannerId = 
+			#if testing if(AdmobConfig.enableTestAds) testBannerKey else #end
+			#if android AdmobConfig.androidBannerKey
+			#elseif ios AdmobConfig.iosBannerKey
+			#end;
+		if(bannerId != "")
+		{
+			tryRun(() -> bannerRef = __initBanner(bannerId, bannerShouldBeVisible, bannerPosition, new BannerListener()));
+			reloadBanner();
 		}
 	}
 	
-	//Callbacks
-	public function onAdmobAdEvent(adTypeString:String, adEventTypeString:String)
+	private static function reloadBanner()
 	{
-		trace(adTypeString + " " + adEventTypeString);
-		
-		var adType:AdType = switch(adTypeString)
+		debugLog('reloadBanner()');
+		if(loadingBanner || bannerRef == NULL_FOREIGN_REF) return;
+
+		loadingBanner = true;
+		bannerFailed = false;
+		tryRun(() -> __loadBanner(bannerRef));
+	}
+	
+	//Called from Design Mode
+	public static function showBanner()
+	{
+		debugLog('showBanner()');
+		bannerShouldBeVisible = true;
+		if(bannerRef == NULL_FOREIGN_REF) return;
+
+		if(bannerFailed)
 		{
-			case "banner": BANNER;
-			case "interstitial": INTERSTITIAL;
-			case "rewarded": REWARDED;
-			default: null;
+			reloadBanner();
 		}
+		tryRun(() -> {
+			__showBanner(bannerRef);
+			instance.nativeEventQueue.push(AdEvent(BANNER, OPENED));
+		});
+	}
+	
+	//Called from Design Mode
+	public static function hideBanner()
+	{
+		debugLog('hideBanner()');
+		bannerShouldBeVisible = false;
+		if(bannerRef == NULL_FOREIGN_REF) return;
+
+		tryRun(() -> {
+			__hideBanner(bannerRef);
+			instance.nativeEventQueue.push(AdEvent(BANNER, CLOSED));
+		});
+	}
+	
+	//Called from Design Mode
+	public static function setBannerPosition(position:Int)
+	{
+		debugLog('setBannerPosition($position)');
+		bannerPosition = if(position == 1) "TOP" else "BOTTOM";
 		
-		var adEventType:AdEventType = switch(adEventTypeString)
-		{
-			case "open": OPENED;
-			case "close": CLOSED;
-			case "load": LOADED;
-			case "fail": FAILED_TO_LOAD;
-			case "click": CLICKED;
-			default: null;
-		}
-		
-		if(adType != null && adEventType != null)
-		{
-			nativeEventQueue.push(AdEvent(adType, adEventType));
-		}
+		if(bannerRef == NULL_FOREIGN_REF) return;
+		tryRun(() -> __setBannerPosition(bannerRef, bannerPosition));
 	}
 
-	public function onAdmobRewardEvent(rewardType:String, rewardAmount:Float)
+	//Called from Design Mode
+	public static function getBannerHeight()
 	{
-		nativeEventQueue.push(RewardEvent(rewardType, rewardAmount));
+		return bannerHeight;
 	}
 
+	//Called from Design Mode
+	public static function loadInterstitial()
+	{
+		debugLog('loadInterstitial()');
+		var interstitialId = 
+			#if testing if(AdmobConfig.enableTestAds) testInterstitialKey else #end
+			#if android AdmobConfig.androidInterstitialKey
+			#elseif ios AdmobConfig.iosInterstitialKey
+			#end;
+
+		tryRun(() -> __loadInterstitial(interstitialId, new FullScreenCallbacks(INTERSTITIAL)));
+	}
+	
+	private static function updateInterstitialRef(ref:Int)
+	{
+		if(interstitialRef != NULL_FOREIGN_REF)
+			tryRun(() -> __clearReference(interstitialRef));
+		interstitialRef = ref;
+	}
+	
+	//Called from Design Mode
+	public static function showInterstitial()
+	{
+		debugLog('showInterstitial()');
+		if(interstitialRef == NULL_FOREIGN_REF) return;
+
+		tryRun(() -> __showInterstitial(interstitialRef));
+	}
+
+	//Called from Design Mode
+	public static function loadRewarded()
+	{
+		debugLog('loadRewarded()');
+		var rewardedId = 
+			#if testing if(AdmobConfig.enableTestAds) testRewardedKey else #end
+			#if android AdmobConfig.androidRewardedKey
+			#elseif ios AdmobConfig.iosRewardedKey
+			#end;
+
+		tryRun(() -> __loadRewarded(rewardedId, new FullScreenCallbacks(REWARDED)));
+	}
+	
+	private static function updateRewardedRef(ref:Int)
+	{
+		if(rewardedRef != NULL_FOREIGN_REF)
+			tryRun(() -> __clearReference(rewardedRef));
+		rewardedRef = ref;
+	}
+	
+	//Called from Design Mode
+	public static function showRewarded()
+	{
+		debugLog('showRewarded()');
+		if(rewardedRef == NULL_FOREIGN_REF) return;
+		
+		tryRun(() -> __showRewarded(rewardedRef, instance));
+	}
+
+	//OnUserEarnedRewardListener
+	public function onUserEarnedReward(rewardType:String, rewardAmount:Int):Void
+	{
+		debugLog('onUserEarnedReward($rewardType, $rewardAmount)');
+		instance.nativeEventQueue.push(RewardEvent(rewardType, rewardAmount));
+	}
+
+	//Extension
 	public override function preSceneUpdate()
 	{
 		for(event in nativeEventQueue)
@@ -312,6 +433,71 @@ class AdMob extends Extension
 		}
 		nativeEventQueue.splice(0, nativeEventQueue.length);
 	}
+
+	//native helpers
+
+	private static inline function tryRun(functionToRun:()->Void, ?pos:haxe.PosInfos):Void
+	{
+		try
+		{
+			functionToRun();
+		}
+		catch(e:Dynamic)
+		{
+			trace("Exception: " + e + Utils.printExceptionstackIfAvailable(), pos);
+		}
+	}
+
+	#if android
+	private var javaInstance:Dynamic;
+
+	private function loadFunction0(name:String, signature:String):Dynamic
+	{
+		var memberMethod:(Dynamic)->Void = JNI.createMemberMethod("com/byrobin/admobex/AdMobEx", name, signature);
+		return memberMethod.bind(javaInstance);
+	}
+	private function loadFunction1(name:String, signature:String):Dynamic
+	{
+		var memberMethod:(Dynamic,Dynamic)->Void = JNI.createMemberMethod("com/byrobin/admobex/AdMobEx", name, signature);
+		return memberMethod.bind(javaInstance);
+	}
+	private function loadFunction2(name:String, signature:String):Dynamic
+	{
+		var memberMethod:(Dynamic,Dynamic,Dynamic)->Void = JNI.createMemberMethod("com/byrobin/admobex/AdMobEx", name, signature);
+		return memberMethod.bind(javaInstance);
+	}
+	private function loadFunction3(name:String, signature:String):Dynamic
+	{
+		var memberMethod:(Dynamic,Dynamic,Dynamic,Dynamic)->Void = JNI.createMemberMethod("com/byrobin/admobex/AdMobEx", name, signature);
+		return memberMethod.bind(javaInstance);
+	}
+	private function loadFunction4(name:String, signature:String):Dynamic
+	{
+		var memberMethod:(Dynamic,Dynamic,Dynamic,Dynamic,Dynamic)->Void = JNI.createMemberMethod("com/byrobin/admobex/AdMobEx", name, signature);
+		return memberMethod.bind(javaInstance);
+	}
+	#elseif ios
+	private function loadFunction0(name:String):Dynamic
+	{
+		return cpp.Lib.load("adMobEx", "admobex_" + name, 0);
+	}
+	private function loadFunction1(name:String):Dynamic
+	{
+		return cpp.Lib.load("adMobEx", "admobex_" + name, 1);
+	}
+	private function loadFunction2(name:String):Dynamic
+	{
+		return cpp.Lib.load("adMobEx", "admobex_" + name, 2);
+	}
+	private function loadFunction3(name:String):Dynamic
+	{
+		return cpp.Lib.load("adMobEx", "admobex_" + name, 3);
+	}
+	private function loadFunction4(name:String):Dynamic
+	{
+		return cpp.Lib.load("adMobEx", "admobex_" + name, 4);
+	}
+	#end
 }
 
 enum AdEventData {
@@ -331,4 +517,117 @@ enum AdEventType {
 	LOADED;
 	FAILED_TO_LOAD;
 	CLICKED;
+}
+
+@:access(com.stencyl.admob.AdMob)
+class BannerListener implements AdListener
+{
+	public function new()
+	{
+		
+	}
+
+    public function onAdClicked():Void
+	{
+		AdMob.debugLog('onAdClicked()');
+		AdMob.instance.nativeEventQueue.push(AdEvent(BANNER, CLICKED));
+	}
+
+    public function onAdClosed():Void
+	{
+		AdMob.debugLog('onAdClosed()');
+		AdMob.instance.nativeEventQueue.push(AdEvent(BANNER, CLOSED));
+	}
+
+    public function onAdFailedToLoad(loadAdError:String):Void
+	{
+		AdMob.debugLog('onAdFailedToLoad($loadAdError)');
+		AdMob.loadingBanner = false;
+		AdMob.bannerFailed = true;
+		AdMob.instance.nativeEventQueue.push(AdEvent(BANNER, FAILED_TO_LOAD));
+	}
+
+    public function onAdImpression():Void
+	{
+		AdMob.debugLog('onAdImpression()');
+	}
+
+    public function onAdLoaded():Void
+	{
+		AdMob.debugLog('onAdLoaded()');
+		AdMob.loadingBanner = false;
+		AdMob.instance.nativeEventQueue.push(AdEvent(BANNER, LOADED));
+	}
+	
+    public function onAdOpened():Void
+	{
+		AdMob.debugLog('onAdOpened()');
+		AdMob.instance.nativeEventQueue.push(AdEvent(BANNER, OPENED));
+	}
+
+	public function onAdHeightUpdated(heightInPixels:Int):Void
+	{
+		AdMob.debugLog('onAdHeightUpdated($heightInPixels)');
+		AdMob.bannerHeight = Math.ceil(heightInPixels / (Engine.SCALE * Engine.screenScaleY));
+	}
+}
+
+@:access(com.stencyl.admob.AdMob)
+class FullScreenCallbacks implements AdLoadCallback implements FullScreenContentCallback
+{
+	private var adType:AdType;
+
+	public function new(adType:AdType)
+	{
+		this.adType = adType;
+	}
+
+	public function onAdLoaded(adRef:Int):Void
+	{
+		AdMob.debugLog('onAdLoaded($adRef)');
+		switch(adType)
+		{
+			case INTERSTITIAL: AdMob.updateInterstitialRef(adRef);
+			case REWARDED: AdMob.updateRewardedRef(adRef);
+			case _:
+		}
+		
+		AdMob.tryRun(() -> AdMob.__setContentCallback(adRef, this));
+
+		AdMob.instance.nativeEventQueue.push(AdEvent(adType, LOADED));
+	}
+
+    public function onAdFailedToLoad(loadAdError:String):Void
+	{
+		AdMob.debugLog('onAdFailedToLoad($loadAdError)');
+		AdMob.instance.nativeEventQueue.push(AdEvent(adType, FAILED_TO_LOAD));
+	}
+
+	public function onAdClicked():Void
+	{
+		AdMob.debugLog('onAdClicked()');
+		AdMob.instance.nativeEventQueue.push(AdEvent(adType, CLICKED));
+	}
+
+    public function onAdDismissedFullScreenContent():Void
+	{
+		AdMob.debugLog('onAdDismissedFullScreenContent()');
+		AdMob.instance.nativeEventQueue.push(AdEvent(adType, CLOSED));
+	}
+
+    public function onAdFailedToShowFullScreenContent(adError:String):Void
+	{
+		AdMob.debugLog('onAdFailedToShowFullScreenContent($adError)');
+	}
+
+    public function onAdImpression():Void
+	{
+		AdMob.debugLog('onAdImpression()');
+	}
+
+    public function onAdShowedFullScreenContent():Void
+	{
+		AdMob.debugLog('onAdShowedFullScreenContent()');
+		AdMob.instance.nativeEventQueue.push(AdEvent(adType, OPENED));
+	}
 }

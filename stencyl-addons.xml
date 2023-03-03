@@ -30,6 +30,7 @@
 		<header label="@mobile.settings.money.admob"/>
 		<field name="enableAdmobAds" />
 		<field name="enableTestAds" />
+		<field name="enableTestConsent" />
 
 		<header label="@mobile.settings.money.admob.ios" />
 		<field name="iosAppID" label="@fields.appID.label" editor="SingleLine" />

@@ -13,453 +13,202 @@ import org.haxe.lime.HaxeObject;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+import java.util.Locale;
 
-import android.os.Bundle;
-import android.os.Handler;
+import android.annotation.SuppressLint;
 import android.provider.Settings.Secure;
+import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.Display;
 import android.view.Gravity;
+import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewGroup.LayoutParams;
-import android.view.animation.Animation;
-import android.view.animation.AlphaAnimation;
 import android.widget.LinearLayout;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.UiThread;
 
-import com.google.ads.mediation.admob.AdMobAdapter;
 import com.google.android.gms.ads.*;
-import com.google.android.gms.ads.initialization.InitializationStatus;
-import com.google.android.gms.ads.initialization.OnInitializationCompleteListener;
 import com.google.android.gms.ads.interstitial.*;
-import com.google.android.gms.ads.rewarded.RewardItem;
 import com.google.android.gms.ads.rewarded.RewardedAd;
 import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback;
 import com.google.android.ump.*;
 
-public class AdMobEx extends Extension {
-
-	//////////////////////////////////////////////////////////////////////////////////////////////////
-	//////////////////////////////////////////////////////////////////////////////////////////////////
-
-	private static InterstitialAd interstitial;
-	private static RewardedAd rewarded;
-	private static AdView banner = null;
-    private static LinearLayout layout;
-	private static HaxeObject callback;
-
+public class AdMobEx extends Extension
+{
 	private static final String TAG = "AdMobEx";
 
-	//////////////////////////////////////////////////////////////////////////////////////////////////
-	//////////////////////////////////////////////////////////////////////////////////////////////////
-    
-	private static String admobId=null;
-    
-	private static String interstitialId=null;
-	private static String rewardedId=null;
+	@SuppressLint("StaticFieldLeak")
+	private static AdMobEx instance;
+	private final String admobId;
 
-	private static boolean failBanner=false;
-	private static boolean loadingBanner=false;
-	private static boolean mustBeShowingBanner=false;
-	private static String bannerId=null;
+	private final ForeignReferenceManager refs;
 
-	private static AdMobEx instance=null;
-	private static Boolean testingAds=false;
-	private static int gravity=Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL;
-	
-	private static String deviceId;
-	private static boolean consentChecked = false;
-	private static ConsentForm consentForm;
-	private static boolean showWhenLoaded = false;
+	//consent form
+	private ConsentForm consentForm;
 
-	//////////////////////////////////////////////////////////////////////////////////////////////////
-	//////////////////////////////////////////////////////////////////////////////////////////////////
+	//testing
+	private boolean testingAds = false;
+	private boolean loggingEnabled = false;
+	private String deviceId;
 
-	private static int debugGeography = -1;
-	private static int childDirected = RequestConfiguration.TAG_FOR_CHILD_DIRECTED_TREATMENT_UNSPECIFIED;
-	private static int underAgeOfConsent = RequestConfiguration.TAG_FOR_UNDER_AGE_OF_CONSENT_UNSPECIFIED;
-	private static String maxAdContentRating = RequestConfiguration.MAX_AD_CONTENT_RATING_UNSPECIFIED;
+	// Logging
 
-	public static void setDebugGeography(String id)
+	private void debugLog(String msg)
 	{
-		switch(id)
+		if(loggingEnabled)
 		{
-			case "eea": debugGeography = ConsentDebugSettings.DebugGeography.DEBUG_GEOGRAPHY_EEA; break;
-			case "not_eea": debugGeography = ConsentDebugSettings.DebugGeography.DEBUG_GEOGRAPHY_NOT_EEA; break;
-			case "disabled": debugGeography = ConsentDebugSettings.DebugGeography.DEBUG_GEOGRAPHY_DISABLED; break;
-			default: debugGeography = -1;
+			Log.d(TAG, msg);
 		}
 	}
 
-	public static void setTagForChildDirectedTreatment(String id)
+	// Initialization
+
+	public AdMobEx() // as an Extension, this is automatically instantiated once by GameActivity.
 	{
-		switch(id)
-		{
-			case "true": childDirected = RequestConfiguration.TAG_FOR_CHILD_DIRECTED_TREATMENT_TRUE; break;
-			case "false": childDirected = RequestConfiguration.TAG_FOR_CHILD_DIRECTED_TREATMENT_FALSE; break;
-			default: childDirected = RequestConfiguration.TAG_FOR_CHILD_DIRECTED_TREATMENT_UNSPECIFIED;
-		}
+		Log.d(TAG,"new AdMobEx()");
+		if(instance != null) throw new RuntimeException();
+		instance = this;
+		refs = new ForeignReferenceManager();
+		admobId = mainActivity.getResources().getString(R.string.admob_app_id);
 	}
 
-	public static void setTagForUnderAgeOfConsent(String id)
+	@SuppressWarnings("unused") /* Called from Haxe */
+	public void initConfig(boolean testingAds, boolean loggingEnabled)
 	{
-		switch(id)
+		instance.loggingEnabled = loggingEnabled;
+		debugLog(String.format("initConfig(%b, %b)", testingAds, loggingEnabled));
+
+		this.testingAds = testingAds;
+		if(testingAds)
 		{
-			case "true": underAgeOfConsent = RequestConfiguration.TAG_FOR_UNDER_AGE_OF_CONSENT_TRUE; break;
-			case "false": underAgeOfConsent = RequestConfiguration.TAG_FOR_UNDER_AGE_OF_CONSENT_FALSE; break;
-			default: underAgeOfConsent = RequestConfiguration.TAG_FOR_UNDER_AGE_OF_CONSENT_UNSPECIFIED;
+			@SuppressLint("HardwareIds") /* this is only for testing so don't worry about the warning */
+			String android_id = Secure.getString(mainActivity.getContentResolver(), Secure.ANDROID_ID);
+
+			deviceId = AdMobEx.md5(android_id).toUpperCase();
 		}
 	}
 
-	public static void setMaxAdContentRating(String maxAdContentRating)
+	private static String md5(String s)
 	{
-		switch(maxAdContentRating)
+		MessageDigest digest;
+		try
 		{
-			case RequestConfiguration.MAX_AD_CONTENT_RATING_G:
-			case RequestConfiguration.MAX_AD_CONTENT_RATING_PG:
-			case RequestConfiguration.MAX_AD_CONTENT_RATING_T:
-			case RequestConfiguration.MAX_AD_CONTENT_RATING_MA:
-				AdMobEx.maxAdContentRating = maxAdContentRating;
-				break;
-			default:
-				AdMobEx.maxAdContentRating = RequestConfiguration.MAX_AD_CONTENT_RATING_UNSPECIFIED;
+			digest = MessageDigest.getInstance("MD5");
+			digest.update(s.getBytes(),0,s.length());
+			return new java.math.BigInteger(1, digest.digest()).toString(16);
 		}
-	}
-	
-	//////////////////////////////////////////////////////////////////////////////////////////////////
-	//////////////////////////////////////////////////////////////////////////////////////////////////
-
-	static public AdMobEx getInstance(){
-		if(instance==null && bannerId!=null) instance = new AdMobEx();
-		if(bannerId==null){
-			Log.e(TAG,"You tried to get Instance without calling INIT first on AdMobEx class!");
+		catch (Exception e)
+		{
+			e.printStackTrace();
 		}
-		return instance;
+		return "";
 	}
 
-	static public void init(HaxeObject cb, String bannerId, String interstitialId, String rewardedId, String gravityMode, boolean testingAds){
-        
-        callback = cb;
-        AdMobEx.admobId=mainActivity.getResources().getString(R.string.admob_app_id);
-		AdMobEx.bannerId=bannerId;
-		AdMobEx.interstitialId=interstitialId;
-		AdMobEx.rewardedId=rewardedId;
-		AdMobEx.testingAds=testingAds;
-		setBannerPosition(gravityMode);
-		
-		mainActivity.runOnUiThread(new Runnable() {
-            public void run() 
-			{ 
-				Log.d(TAG,"Init Admob");
-				getInstance(); 
-			
-				initAdmob();
-			}
-		});	
+	@SuppressWarnings("unused") /* Called from Haxe */
+	public void resetConsent()
+	{
+		debugLog("resetConsent()");
+		UserMessagingPlatform.getConsentInformation(mainContext).reset();
 	}
 
-    static public void loadInterstitial() {
-        Log.d(TAG,"Load Interstitial Begin");
-        if(interstitialId.isEmpty()) return;
-        mainActivity.runOnUiThread(new Runnable() {
-            public void run() { reloadInterstitial();}
-        });
+	// Consent and Sdk Initialization
 
-        Log.d(TAG,"Load Interstitial End");
-    }
+	@SuppressWarnings("unused") /* Called from Haxe */
+	public void setupConsentForm(boolean testingConsent, String _debugGeography, String _underAgeOfConsent, HaxeObject callbacks)
+	{
+		debugLog("setupConsentForm()");
 
-	static public void showInterstitial() {
-		Log.d(TAG,"Show Interstitial Begin");
-		if(interstitialId.isEmpty()) return;
-		mainActivity.runOnUiThread(new Runnable() {
-			public void run() {	if(interstitial != null) interstitial.show(mainActivity);	}
-		});
-		Log.d(TAG,"Show Interstitial End");
-	}
+		int debugGeography = getDebugGeography(_debugGeography);
+		int underAgeOfConsent = getTagForUnderAgeOfConsent(_underAgeOfConsent);
 
-	static public void loadRewarded() {
-		Log.d(TAG,"Load Rewarded Begin");
-		if(rewardedId.isEmpty()) return;
-		mainActivity.runOnUiThread(new Runnable() {
-			public void run() { reloadRewarded();}
-		});
+		mainActivity.runOnUiThread(() -> {
+			debugLog("setupConsentForm.UI()");
 
-		Log.d(TAG,"Load Rewarded End");
-	}
-
-	static public void showRewarded() {
-		Log.d(TAG,"Show Rewarded Begin");
-		if(rewardedId.isEmpty()) return;
-		mainActivity.runOnUiThread(new Runnable() {
-			public void run() {	if(rewarded != null) rewarded.show(mainActivity, rewardItem -> {
-				callback.call("onAdmobRewardEvent", new Object[] {rewardItem.getType(), rewardItem.getAmount()});
-			});	}
-		});
-		Log.d(TAG,"Show Rewarded End");
-	}
-
-	static public void showBanner() {
-		if(bannerId.isEmpty()) return;
-		mustBeShowingBanner=true;
-		if(failBanner){
-			mainActivity.runOnUiThread(new Runnable() {
-				public void run() {reloadBanner();}
-			});
-			return;
-		}
-		Log.d(TAG,"Show Banner");
-		
-		mainActivity.runOnUiThread(new Runnable() {
-			public void run() {
-
-				banner.setVisibility(AdView.VISIBLE);
-                
-                Animation animation1 = new AlphaAnimation(0.0f, 1.0f);
-                animation1.setDuration(1000);
-                layout.startAnimation(animation1);
-			}
-		});
-	}
-
-	static public void hideBanner() {
-		if(bannerId.isEmpty()) return;
-		mustBeShowingBanner=false;
-		if(failBanner){
-			mainActivity.runOnUiThread(new Runnable() {
-				public void run() {reloadBanner();}
-			});
-			return;
-		}
-		Log.d(TAG,"Hide Banner");
-
-		mainActivity.runOnUiThread(new Runnable() {
-			public void run() {
-                
-                Animation animation1 = new AlphaAnimation(1.0f, 0.0f);
-                animation1.setDuration(1000);
-                layout.startAnimation(animation1);
-                
-                final Handler handler = new Handler();
-                handler.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        banner.setVisibility(AdView.GONE);
-                    }
-                }, 1000);
-            
-            }
-		});
-	}
-
-	static public void onResize(){
-		Log.d(TAG,"On Resize");
-		mainActivity.runOnUiThread(new Runnable() {
-			public void run() {
-                if(!bannerId.isEmpty()){
-                    reinitBanner();
-                }
-            }
-		});
-	}
-	
-	static public void setBannerPosition(final String gravityMode)
-    {
-        mainActivity.runOnUiThread(new Runnable()
-                                   {
-        	public void run()
+			ConsentRequestParameters.Builder paramsBuilder = new ConsentRequestParameters.Builder();
+			if (testingConsent)
 			{
-			
-				if(gravityMode.equals("TOP"))
-				{
-					if(banner==null)
-					{
-						AdMobEx.gravity=Gravity.TOP | Gravity.CENTER_HORIZONTAL;
-					}else
-					{
-						AdMobEx.gravity=Gravity.TOP | Gravity.CENTER_HORIZONTAL;
-						layout.setGravity(gravity);
-					}
-				}else
-				{
-					if(banner==null)
-					{
-						AdMobEx.gravity=Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL;
-					}else
-					{
-						AdMobEx.gravity=Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL;
-						layout.setGravity(gravity);
-					}
-				}
-            }
-        });
-    }
+				ConsentDebugSettings debugSettings = new ConsentDebugSettings.Builder(mainContext)
+					.setDebugGeography(debugGeography)
+					.addTestDeviceHashedId(deviceId)
+					.build();
+				paramsBuilder.setConsentDebugSettings(debugSettings);
+			}
+			if (underAgeOfConsent != RequestConfiguration.TAG_FOR_UNDER_AGE_OF_CONSENT_UNSPECIFIED)
+			{
+				boolean value = (underAgeOfConsent == RequestConfiguration.TAG_FOR_UNDER_AGE_OF_CONSENT_TRUE);
+				paramsBuilder.setTagForUnderAgeOfConsent(value);
+			}
+			ConsentRequestParameters params = paramsBuilder
+				.setAdMobAppId(admobId)
+				.build();
 
-	//////////////////////////////////////////////////////////////////////////////////////////////////
-	//////////////////////////////////////////////////////////////////////////////////////////////////
-	
-	
-    static public void initAdmob(){
-        mainActivity.runOnUiThread(new Runnable()
-        {
-            public void run()
-            {
-                MobileAds.initialize(mainActivity.getApplicationContext(), new OnInitializationCompleteListener()
-				{
-					@Override
-					public void onInitializationComplete(@NonNull InitializationStatus initializationStatus)
-					{
-						Log.d(TAG,"Admob AppID: "+admobId);
+			UserMessagingPlatform.getConsentInformation(mainContext).requestConsentInfoUpdate(
+				mainActivity,
+				params,
+				() -> {
+					boolean formAvailable = UserMessagingPlatform.getConsentInformation(mainContext).isConsentFormAvailable();
+					callbacks.call("onConsentInfoUpdateSuccess", new Object[] {formAvailable});
+				},
+				formError ->
+					callbacks.call("onConsentInfoUpdateFailure", new Object[] {formError.toString()})
+				);
+		});
+	}
 
-						if(testingAds){
-							String android_id = Secure.getString(mainActivity.getContentResolver(), Secure.ANDROID_ID);
-							deviceId = getInstance().md5(android_id).toUpperCase();
-							Log.d(TAG,"DEVICE ID: "+deviceId);
-						}
-						updateRequestConfig();
-						getConsentInfo();
-						
-						if(!bannerId.isEmpty()){
-							reinitBanner();
-						}
-
-						if(!interstitialId.isEmpty()){
-							reloadInterstitial();
-						}
-
-						if(!rewardedId.isEmpty()){
-							reloadRewarded();
-						}
-					}
-				});
-            }
-        });
-    }
-
-	private static InterstitialAdLoadCallback interstitialAdLoadCallback = new InterstitialAdLoadCallback()
+	@SuppressWarnings("unused") /* Called from Haxe */
+	public void loadConsentForm(HaxeObject callbacks)
 	{
-		@Override
-		public void onAdLoaded(@NonNull InterstitialAd interstitialAd)
-		{
-			super.onAdLoaded(interstitialAd);
-			interstitial = interstitialAd;
-			interstitial.setFullScreenContentCallback(interstitialContentCallback);
-			callback.call("onAdmobAdEvent", new Object[] {"interstitial", "load"});
-			Log.d(TAG,"Received Interstitial!");
-		}
+		debugLog("loadConsentForm()");
+		mainActivity.runOnUiThread(() -> {
+			debugLog("loadConsentForm.UI()");
 
-		@Override
-		public void onAdFailedToLoad(@NonNull LoadAdError loadAdError)
-		{
-			super.onAdFailedToLoad(loadAdError);
-			interstitial = null;
-			callback.call("onAdmobAdEvent", new Object[] {"interstitial", "fail"});
-			//reloadInterstitial();
-			Log.e(TAG,"Fail to get Interstitial: "+loadAdError);
-		}
-	};
+			consentForm = null;
+			UserMessagingPlatform.loadConsentForm(
+				mainContext, consentForm -> {
+					AdMobEx.this.consentForm = consentForm;
+					callbacks.call("onConsentFormLoadSuccess", new Object[] {});
+				},
+				formError ->
+					callbacks.call("onConsentFormLoadFailure", new Object[] {formError.toString()})
+				);
+		});
+	}
 
-	private static FullScreenContentCallback interstitialContentCallback = new FullScreenContentCallback()
+	@SuppressWarnings("unused") /* Called from Haxe */
+	public void showConsentForm(HaxeObject callbacks)
 	{
-		@Override
-		public void onAdShowedFullScreenContent()
-		{
-			super.onAdShowedFullScreenContent();
-			callback.call("onAdmobAdEvent", new Object[] {"interstitial", "open"});
-		}
+		debugLog("showConsentForm()");
+		mainActivity.runOnUiThread(() -> {
+			debugLog("showConsentForm.UI()");
+			consentForm.show(
+				mainActivity,
+				formError ->
+					callbacks.call("onConsentFormDismissed", new Object[] {formError == null ? "" : formError.toString()})
+				);
+		});
+	}
 
-		@Override
-		public void onAdDismissedFullScreenContent()
-		{
-			super.onAdDismissedFullScreenContent();
-			//reloadInterstitial();
-			callback.call("onAdmobAdEvent", new Object[] {"interstitial", "close"});
-			Log.d(TAG,"Dismiss Interstitial");
-		}
-
-		@Override
-		public void onAdClicked()
-		{
-			super.onAdClicked();
-			callback.call("onAdmobAdEvent", new Object[] {"interstitial", "click"});
-		}
-
-		@Override
-		public void onAdFailedToShowFullScreenContent(@NonNull AdError adError)
-		{
-			super.onAdFailedToShowFullScreenContent(adError);
-		}
-
-		@Override
-		public void onAdImpression()
-		{
-			super.onAdImpression();
-		}
-	};
-
-	private static RewardedAdLoadCallback rewardedAdLoadCallback = new RewardedAdLoadCallback()
+	@SuppressWarnings("unused") /* Called from Haxe */
+	public void initSdk(HaxeObject callbacks)
 	{
-		@Override
-		public void onAdLoaded(@NonNull RewardedAd rewardedAd)
-		{
-			super.onAdLoaded(rewardedAd);
-			rewarded = rewardedAd;
-			rewarded.setFullScreenContentCallback(rewardedContentCallback);
-			callback.call("onAdmobAdEvent", new Object[] {"rewarded", "load"});
-			Log.d(TAG,"Received Rewarded!");
-		}
+		debugLog("initSdk()");
+		mainActivity.runOnUiThread(() -> {
+			debugLog("initSdk.UI()");
 
-		@Override
-		public void onAdFailedToLoad(@NonNull LoadAdError loadAdError)
-		{
-			super.onAdFailedToLoad(loadAdError);
-			rewarded = null;
-			callback.call("onAdmobAdEvent", new Object[] {"rewarded", "fail"});
-			//reloadRewarded();
-			Log.e(TAG,"Fail to get Rewarded: "+loadAdError);
-		}
-	};
+			MobileAds.initialize(mainActivity.getApplicationContext(), initializationStatus ->
+				callbacks.call("onInitializationComplete", new Object[] {})
+			);
+		});
+	}
 
-	private static FullScreenContentCallback rewardedContentCallback = new FullScreenContentCallback()
+	// Ads
+
+	@SuppressWarnings("unused") /* Called from Haxe */
+	public void updateRequestConfig(String _childDirected, String _underAgeOfConsent, String _maxAdContentRating)
 	{
-		@Override
-		public void onAdShowedFullScreenContent()
-		{
-			super.onAdShowedFullScreenContent();
-			callback.call("onAdmobAdEvent", new Object[] {"rewarded", "open"});
-		}
-
-		@Override
-		public void onAdDismissedFullScreenContent()
-		{
-			super.onAdDismissedFullScreenContent();
-			//reloadRewarded();
-			callback.call("onAdmobAdEvent", new Object[] {"rewarded", "close"});
-			Log.d(TAG,"Dismiss Rewarded");
-		}
-
-		@Override
-		public void onAdClicked()
-		{
-			super.onAdClicked();
-			callback.call("onAdmobAdEvent", new Object[] {"rewarded", "click"});
-		}
-
-		@Override
-		public void onAdFailedToShowFullScreenContent(@NonNull AdError adError)
-		{
-			super.onAdFailedToShowFullScreenContent(adError);
-		}
-
-		@Override
-		public void onAdImpression()
-		{
-			super.onAdImpression();
-		}
-	};
-
-	private static void updateRequestConfig()
-	{
+		debugLog("updateRequestConfig()");
 		List<String> testDeviceIds = new ArrayList<>();
 
 		testDeviceIds.add(AdRequest.DEVICE_ID_EMULATOR);
@@ -471,259 +220,419 @@ public class AdMobEx extends Extension {
 		RequestConfiguration requestConfiguration = MobileAds.getRequestConfiguration()
 			.toBuilder()
 			.setTestDeviceIds(testDeviceIds)
-			.setTagForChildDirectedTreatment(childDirected)
-			.setTagForUnderAgeOfConsent(underAgeOfConsent)
-			.setMaxAdContentRating(maxAdContentRating)
+			.setTagForChildDirectedTreatment(getTagForChildDirectedTreatment(_childDirected))
+			.setTagForUnderAgeOfConsent(getTagForUnderAgeOfConsent(_underAgeOfConsent))
+			.setMaxAdContentRating(getMaxAdContentRating(_maxAdContentRating))
 			.build();
 		MobileAds.setRequestConfiguration(requestConfiguration);
 	}
-    
-	public static AdRequest buildAdReq()
+
+	@SuppressWarnings("unused") /* Called from Haxe */
+	public int initBanner(String bannerId, boolean visible, String gravity, HaxeObject callbacks)
 	{
+		debugLog(String.format("initBanner(%s)", bannerId));
+		final AdView banner = new AdView(mainActivity);
+		mainActivity.runOnUiThread(() -> {
+			debugLog(String.format("initBanner.UI(%s)", bannerId));
+
+			banner.setAdUnitId(bannerId);
+			AdSize bannerAdSize = getFullWidthAdaptiveSize();
+			banner.setAdSize(bannerAdSize);
+			banner.setAdListener(new AdListener()
+			{
+				@Override
+				public void onAdImpression()
+				{
+					callbacks.call("onAdImpression", new Object[] {});
+				}
+
+				@Override
+				public void onAdClicked()
+				{
+					callbacks.call("onAdClicked", new Object[] {});
+				}
+
+				@Override
+				public void onAdClosed()
+				{
+					callbacks.call("onAdClosed", new Object[] {});
+				}
+
+				@Override
+				public void onAdFailedToLoad(@NonNull LoadAdError loadAdError)
+				{
+					callbacks.call("onAdFailedToLoad", new Object[] {loadAdError.toString()});
+				}
+
+				@Override
+				public void onAdLoaded()
+				{
+					callbacks.call("onAdLoaded", new Object[] {});
+				}
+
+				@Override
+				public void onAdOpened()
+				{
+					callbacks.call("onAdOpened", new Object[] {});
+				}
+			});
+
+			LinearLayout layout = new LinearLayout(mainActivity);
+			layout.setGravity(getGravity(gravity));
+			mainActivity.addContentView(layout, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+			layout.addView(banner);
+			layout.bringToFront();
+			
+			layout.setAlpha(0.0f);
+			if(visible)
+			{
+				fadeInBanner(banner);
+			}
+			else
+			{
+				layout.setVisibility(View.GONE);
+			}
+
+			callbacks.call("onAdHeightUpdated", new Object[] {bannerAdSize.getHeightInPixels(mainContext)});
+		});
+		return refs.addReference(banner);
+	}
+
+	@SuppressWarnings("unused") /* Called from Haxe */
+	public void loadBanner(int bannerRef)
+	{
+		debugLog("loadBanner()");
+		AdView banner = refs.getReference(bannerRef);
+		mainActivity.runOnUiThread(() -> {
+			debugLog("loadBanner.UI()");
+			banner.loadAd(buildAdReq());
+		});
+	}
+
+	@SuppressWarnings("unused") /* Called from Haxe */
+	public void showBanner(int bannerRef)
+	{
+		debugLog("showBanner()");
+		AdView banner = refs.getReference(bannerRef);
+		mainActivity.runOnUiThread(() -> {
+			debugLog("showBanner.UI()");
+			fadeInBanner(banner);
+		});
+	}
+
+	@SuppressWarnings("unused") /* Called from Haxe */
+	public void hideBanner(int bannerRef)
+	{
+		debugLog("hideBanner()");
+		AdView banner = refs.getReference(bannerRef);
+		mainActivity.runOnUiThread(() -> {
+			debugLog("hideBanner.UI()");
+			fadeOutBanner(banner);
+		});
+	}
+
+	@SuppressWarnings("unused") /* Called from Haxe */
+	public void setBannerPosition(int bannerRef, final String gravityMode)
+	{
+		debugLog(String.format("setBannerPosition(%s)", gravityMode));
+
+		AdView banner = refs.getReference(bannerRef);
+		mainActivity.runOnUiThread(() -> {
+			debugLog("setBannerPosition.UI()");
+			((LinearLayout) banner.getParent()).setGravity(getGravity(gravityMode));
+		});
+	}
+
+	@SuppressWarnings("unused") /* Called from Haxe */
+	public void disposeBanner(int bannerRef)
+	{
+		debugLog("disposeBanner()");
+		AdView banner = refs.getReference(bannerRef);
+
+		mainActivity.runOnUiThread(() -> {
+			debugLog("disposeBanner.UI()");
+			ViewGroup grandparent = (ViewGroup) banner.getParent().getParent();
+			ViewGroup parent = (ViewGroup) banner.getParent();
+			grandparent.removeView(parent);
+			parent.removeView(banner);
+			banner.destroy();
+		});
+	}
+
+	@SuppressWarnings("unused") /* Called from Haxe */
+	public void loadInterstitial(String interstitialId, HaxeObject callbacks)
+	{
+		debugLog(String.format("loadInterstitial(%s)", interstitialId));
+		mainActivity.runOnUiThread(() -> {
+			debugLog("loadInterstitial.UI()");
+
+			InterstitialAd.load(mainContext, interstitialId, buildAdReq(), new InterstitialAdLoadCallback()
+			{
+				@Override
+				public void onAdLoaded(@NonNull InterstitialAd interstitialAd)
+				{
+					callbacks.call("onAdLoaded", new Object[]{refs.addReference(interstitialAd)});
+				}
+
+				@Override
+				public void onAdFailedToLoad(@NonNull LoadAdError loadAdError)
+				{
+					callbacks.call("onAdFailedToLoad", new Object[]{loadAdError.toString()});
+				}
+			});
+		});
+	}
+
+	@SuppressWarnings("unused") /* Called from Haxe */
+	public void showInterstitial(int interstitialRef)
+	{
+		debugLog("showInterstitial()");
+		InterstitialAd interstitial = refs.getReference(interstitialRef);
+		mainActivity.runOnUiThread(() -> {
+			debugLog("showInterstitial.UI()");
+			interstitial.show(mainActivity);
+		});
+	}
+
+	@SuppressWarnings("unused") /* Called from Haxe */
+	public void loadRewarded(String rewardedId, HaxeObject callbacks)
+	{
+		debugLog(String.format("loadRewarded(%s)", rewardedId));
+		mainActivity.runOnUiThread(() -> {
+			debugLog("loadRewarded.UI()");
+			RewardedAd.load(mainContext, rewardedId, buildAdReq(), new RewardedAdLoadCallback()
+			{
+				@Override
+				public void onAdLoaded(@NonNull RewardedAd rewardedAd)
+				{
+					callbacks.call("onAdLoaded", new Object[] {refs.addReference(rewardedAd)});
+				}
+
+				@Override
+				public void onAdFailedToLoad(@NonNull LoadAdError loadAdError)
+				{
+					callbacks.call("onAdFailedToLoad", new Object[] {loadAdError.toString()});
+				}
+			});
+		});
+	}
+
+	@SuppressWarnings("unused") /* Called from Haxe */
+	public void showRewarded(int rewardedRef, HaxeObject callbacks)
+	{
+		debugLog("showRewarded()");
+		RewardedAd rewarded = refs.getReference(rewardedRef);
+		mainActivity.runOnUiThread(() -> {
+			debugLog("showRewarded.UI()");
+			rewarded.show(mainActivity, rewardItem -> {
+				debugLog(String.format(Locale.ENGLISH, "rewardReceived(%s, %d)", rewardItem.getType(), rewardItem.getAmount()));
+				callbacks.call("onUserEarnedReward", new Object[]{rewardItem.getType(), rewardItem.getAmount()});
+			});
+		});
+	}
+
+	@SuppressWarnings("unused") /* Called from Haxe */
+	public void setFullScreenContentCallback(int adRef, HaxeObject callbacks)
+	{
+		debugLog("setFullScreenContentCallback()");
+		Object ad = refs.getReference(adRef);
+
+		FullScreenContentCallback wrapper = new FullScreenContentCallback()
+		{
+			@Override
+			public void onAdClicked()
+			{
+				callbacks.call("onAdClicked", new Object[] {});
+			}
+
+			@Override
+			public void onAdDismissedFullScreenContent()
+			{
+				callbacks.call("onAdDismissedFullScreenContent", new Object[] {});
+			}
+
+			@Override
+			public void onAdFailedToShowFullScreenContent(@NonNull AdError adError)
+			{
+				callbacks.call("onAdFailedToShowFullScreenContent", new Object[] {adError.toString()});
+			}
+
+			@Override
+			public void onAdImpression()
+			{
+				callbacks.call("onAdImpression", new Object[] {});
+			}
+
+			@Override
+			public void onAdShowedFullScreenContent()
+			{
+				callbacks.call("onAdShowedFullScreenContent", new Object[] {});
+			}
+		};
+
+		if(ad instanceof InterstitialAd)
+		{
+			((InterstitialAd) ad).setFullScreenContentCallback(wrapper);
+		}
+		else if(ad instanceof RewardedAd)
+		{
+			((RewardedAd) ad).setFullScreenContentCallback(wrapper);
+		}
+	}
+
+	@SuppressWarnings("unused") /* Called from Haxe */
+	public void clearReference(int refId)
+	{
+		refs.clearReference(refId);
+	}
+
+	//////////////////////////////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////////////////////////////
+
+	private static int getDebugGeography(String id)
+	{
+		switch(id)
+		{
+			case "eea": return ConsentDebugSettings.DebugGeography.DEBUG_GEOGRAPHY_EEA;
+			case "not_eea": return ConsentDebugSettings.DebugGeography.DEBUG_GEOGRAPHY_NOT_EEA;
+			case "disabled": return ConsentDebugSettings.DebugGeography.DEBUG_GEOGRAPHY_DISABLED;
+			default: return -1;
+		}
+	}
+
+	private static int getTagForChildDirectedTreatment(String id)
+	{
+		switch(id)
+		{
+			case "true": return RequestConfiguration.TAG_FOR_CHILD_DIRECTED_TREATMENT_TRUE;
+			case "false": return RequestConfiguration.TAG_FOR_CHILD_DIRECTED_TREATMENT_FALSE;
+			default: return RequestConfiguration.TAG_FOR_CHILD_DIRECTED_TREATMENT_UNSPECIFIED;
+		}
+	}
+
+	private static int getTagForUnderAgeOfConsent(String id)
+	{
+		switch(id)
+		{
+			case "true": return RequestConfiguration.TAG_FOR_UNDER_AGE_OF_CONSENT_TRUE;
+			case "false": return RequestConfiguration.TAG_FOR_UNDER_AGE_OF_CONSENT_FALSE;
+			default: return RequestConfiguration.TAG_FOR_UNDER_AGE_OF_CONSENT_UNSPECIFIED;
+		}
+	}
+
+	private static String getMaxAdContentRating(String maxAdContentRating)
+	{
+		switch(maxAdContentRating)
+		{
+			case RequestConfiguration.MAX_AD_CONTENT_RATING_G:
+			case RequestConfiguration.MAX_AD_CONTENT_RATING_PG:
+			case RequestConfiguration.MAX_AD_CONTENT_RATING_T:
+			case RequestConfiguration.MAX_AD_CONTENT_RATING_MA:
+				return maxAdContentRating;
+			default:
+				return RequestConfiguration.MAX_AD_CONTENT_RATING_UNSPECIFIED;
+		}
+	}
+
+	private static int getGravity(String gravity)
+	{
+		return gravity.equals("TOP") ?
+			Gravity.TOP | Gravity.CENTER_HORIZONTAL :
+			Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL;
+	}
+
+	private AdRequest buildAdReq()
+	{
+		debugLog("buildAdReq()");
 		AdRequest.Builder builder = new AdRequest.Builder();
 		return builder.build();
 	}
-	
-    static public void reinitBanner(){
-        if(loadingBanner) return;
-        if(banner==null){ // if this is the first time we call this function
-            layout = new LinearLayout(mainActivity);
-            layout.setGravity(gravity);
-        } else {
-            ViewGroup parent = (ViewGroup) layout.getParent();
-            parent.removeView(layout);
-            layout.removeView(banner);
-            banner.destroy();
-        }
-        
-        banner = new AdView(mainActivity);
-        banner.setAdUnitId(bannerId);
-        banner.setAdSize(AdSize.SMART_BANNER);
-        banner.setAdListener(new AdListener() {
-            public void onAdLoaded() {
-                loadingBanner=false;
-                callback.call("onAdmobAdEvent", new Object[] {"banner", "load"});
-                Log.d(TAG,"Received Banner OK!");
-                if(mustBeShowingBanner){
-                    showBanner();
-                }else{
-                    hideBanner();
-                }
-            }
-            public void onAdFailedToLoad(int errorcode) {
-                loadingBanner=false;
-                failBanner=true;
-                callback.call("onAdmobAdEvent", new Object[] {"banner", "fail"});
-                Log.e(TAG,"Fail to get Banner: "+errorcode);
-            }
-            public void onAdClosed(){
-                callback.call("onAdmobAdEvent", new Object[] {"banner", "close"});
-            }
-            public void onAdOpened(){
-                callback.call("onAdmobAdEvent", new Object[] {"banner", "open"});
-            }
-			public void onAdLeftApplication(){
-                    callback.call("onAdmobAdEvent", new Object[] {"banner", "click"});
-            }
-        });
-        
-        mainActivity.addContentView(layout, new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT));
-        layout.addView(banner);
-        layout.bringToFront();
-        if(consentChecked)
-        {
-        	reloadBanner();
-        }
-        else
-        {
-        	failBanner = true;
-        }
-    }
-    
-    public static void reloadInterstitial(){
-        if(interstitialId.isEmpty()) return;
-        //if(loadingInterstitial) return;
-        Log.d(TAG,"Reload Interstitial");
-        if(!consentChecked)
-        {
-        	callback.call("onAdmobAdEvent", new Object[] {"interstitial", "fail"});
-			Log.e(TAG,"Fail to get Interstitial: User consent hasn't been checked yet");
-			return;
-        }
-		InterstitialAd.load(mainContext, interstitialId, buildAdReq(), interstitialAdLoadCallback);
-    }
 
-	public static void reloadRewarded(){
-		if(rewardedId.isEmpty()) return;
-		//if(loadingRewarded) return;
-		Log.d(TAG,"Reload Rewarded");
-		if(!consentChecked)
-		{
-			callback.call("onAdmobAdEvent", new Object[] {"rewarded", "fail"});
-			Log.e(TAG,"Fail to get Rewarded: User consent hasn't been checked yet");
-			return;
-		}
-		RewardedAd.load(mainContext, rewardedId, buildAdReq(), rewardedAdLoadCallback);
-	}
-    
-    static public void reloadBanner(){
-        if(bannerId.isEmpty()) return;
-        if(loadingBanner) return;
-        Log.d(TAG,"Reload Banner");
-        if(!consentChecked)
-        {
-        	callback.call("onAdmobAdEvent", new Object[] {"banner", "fail"});
-            Log.e(TAG,"Fail to get Banner: User consent hasn't been checked yet");
-            failBanner = true;
-			return;
-        }
-        loadingBanner=true;
-        banner.loadAd(buildAdReq());
-        failBanner=false;
-    }
-    
-    private static String md5(String s)  {
-        MessageDigest digest;
-        try  {
-            digest = MessageDigest.getInstance("MD5");
-            digest.update(s.getBytes(),0,s.length());
-            return new java.math.BigInteger(1, digest.digest()).toString(16);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return "";
-    }
-
-	public static void showConsentForm(final boolean checkConsent)
+	private static AdSize getFullWidthAdaptiveSize()
 	{
-		int consentStatus = UserMessagingPlatform.getConsentInformation(mainContext).getConsentStatus();
-		if (checkConsent && consentStatus == ConsentInformation.ConsentStatus.OBTAINED)
+		Display display = mainActivity.getWindowManager().getDefaultDisplay();
+		DisplayMetrics outMetrics = new DisplayMetrics();
+		display.getMetrics(outMetrics);
+
+		float widthPixels = outMetrics.widthPixels;
+		float density = outMetrics.density;
+
+		int adWidth = (int) (widthPixels / density);
+		return AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(mainContext, adWidth);
+	}
+
+	@UiThread
+	private void fadeInBanner(AdView banner)
+	{
+		debugLog("fadeInBanner()");
+		LinearLayout layout = (LinearLayout) banner.getParent();
+
+		if(layout.getAnimation() != null && !layout.getAnimation().hasEnded())
 		{
-			Log.d(TAG, "Skipping form because player already answered");
-			consentChecked = true;
-			return;
+			layout.getAnimation().cancel();
+			layout.clearAnimation();
 		}
 
-		mainActivity.runOnUiThread(new Runnable()
+		layout.setVisibility(View.VISIBLE);
+		int duration = (int) ((1.0f - layout.getAlpha()) * 1000);
+		layout.animate()
+			.alpha(1.0f)
+			.setDuration(duration)
+			.start();
+	}
+
+	@UiThread
+	private void fadeOutBanner(AdView banner)
+	{
+		debugLog("fadeOutBanner()");
+		LinearLayout layout = (LinearLayout) banner.getParent();
+
+		if(layout.getAnimation() != null && !layout.getAnimation().hasEnded())
 		{
-			public void run()
+			layout.getAnimation().cancel();
+			layout.clearAnimation();
+		}
+
+		int duration = (int) (layout.getAlpha() * 1000);
+		layout.animate()
+			.alpha(0.0f)
+			.setDuration(duration)
+			.withEndAction(() -> layout.setVisibility(View.GONE))
+			.start();
+	}
+
+	/**
+	 * Very simple scheme to share object references with
+	 * Haxe without worrying about JVM and HXCPP GC interactions
+	 */
+	class ForeignReferenceManager
+	{
+		private Object[] referenceArray = new Object[5];
+
+		@SuppressWarnings("unchecked")
+		private <T> T getReference(int id)
+		{
+			return (T) referenceArray[id];
+		}
+
+		private int addReference(Object o)
+		{
+			int i = 0;
+			while(i < referenceArray.length && referenceArray[i] != null) { ++i; }
+			if(i == referenceArray.length)
 			{
-				showWhenLoaded = true;
-
-				if (consentForm != null)
-				{
-					showForm();
-				}
-				else
-				{
-					setupForm();
-				}
+				debugLog("Growing reference count: " + referenceArray.length + 5);
+				Object[] newReferences = new Object[referenceArray.length + 5];
+				System.arraycopy(referenceArray, 0, newReferences, 0, referenceArray.length);
+				referenceArray = newReferences;
 			}
-		});
-	}
-
-	static public void getConsentInfo()
-	{
-		int consentStatus = UserMessagingPlatform.getConsentInformation(mainContext).getConsentStatus();
-		if (consentStatus == ConsentInformation.ConsentStatus.OBTAINED)
-		{
-			Log.d(TAG, "Skipping form because player already answered");
-			consentChecked = true;
-			return;
+			referenceArray[i] = o;
+			return i;
 		}
 
-		mainActivity.runOnUiThread(new Runnable()
+		private void clearReference(int id)
 		{
-			public void run()
-			{
-				showWhenLoaded = false;
-				setupForm();
-			}
-		});
-	}
-
-	static public void setupForm()
-	{
-		ConsentRequestParameters.Builder paramsBuilder = new ConsentRequestParameters.Builder();
-		if (testingAds)
-		{
-			ConsentDebugSettings debugSettings = new ConsentDebugSettings.Builder(mainContext)
-				.setDebugGeography(debugGeography)
-				.addTestDeviceHashedId(deviceId)
-				.build();
-			paramsBuilder.setConsentDebugSettings(debugSettings);
+			referenceArray[id] = null;
 		}
-		if (underAgeOfConsent != RequestConfiguration.TAG_FOR_UNDER_AGE_OF_CONSENT_UNSPECIFIED)
-		{
-			boolean value = (underAgeOfConsent == RequestConfiguration.TAG_FOR_UNDER_AGE_OF_CONSENT_TRUE);
-			paramsBuilder.setTagForUnderAgeOfConsent(value);
-		}
-		ConsentRequestParameters params = paramsBuilder
-			.setAdMobAppId(admobId)
-			.build();
-
-		ConsentInformation consentInformation = UserMessagingPlatform.getConsentInformation(mainContext);
-		consentInformation.requestConsentInfoUpdate(
-			mainActivity,
-			params,
-			new ConsentInformation.OnConsentInfoUpdateSuccessListener() {
-				@Override
-				public void onConsentInfoUpdateSuccess() {
-					if (consentInformation.isConsentFormAvailable())
-					{
-						loadForm();
-					}
-					else
-					{
-						consentChecked = true;
-						Log.d(TAG, "No consent form available");
-					}
-				}
-			},
-			new ConsentInformation.OnConsentInfoUpdateFailureListener() {
-				@Override
-				public void onConsentInfoUpdateFailure(FormError formError) {
-					Log.e(TAG, "Consent update failed with error: " + formError.getMessage());
-				}
-			});
-	}
-
-	public static void loadForm() {
-		AdMobEx.consentForm = null;
-		UserMessagingPlatform.loadConsentForm(
-			mainContext, new UserMessagingPlatform.OnConsentFormLoadSuccessListener() {
-				@Override
-				public void onConsentFormLoadSuccess(ConsentForm consentForm) {
-					Log.d(TAG, "Consent form loaded.");
-					AdMobEx.consentForm = consentForm;
-
-
-					if (showWhenLoaded)
-					{
-						showForm();
-					}
-				}
-			},
-			new UserMessagingPlatform.OnConsentFormLoadFailureListener() {
-				@Override
-				public void onConsentFormLoadFailure(FormError formError) {
-					Log.e(TAG, "Consent form load failed with error: " + formError.getMessage());
-				}
-			});
-	}
-
-	private static void showForm()
-	{
-		showWhenLoaded = false;
-		consentForm.show(
-			mainActivity,
-			new ConsentForm.OnConsentFormDismissedListener() {
-				@Override
-				public void onConsentFormDismissed(FormError formError) {
-					loadForm();
-					Log.d(TAG, "Consent form closed.");
-					consentChecked = true;
-				}
-			});
 	}
 }

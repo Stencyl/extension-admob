@@ -158,7 +158,7 @@
     </block>
 
     <block tag="admob-initialize2"
-           code="com.stencyl.admob.AdMob.init(~);"
+           code="com.stencyl.admob.AdMob.initSdk(~);"
            type="action"
            returns="void"
            category="mobile"
@@ -254,7 +254,7 @@
     </block>
 
     <block tag="iad-height"
-           code="(Engine.landscape ? 32 : 50)"
+           code="com.stencyl.admob.AdMob.getBannerHeight()"
            type="normal"
            returns="int"
            category="mobile"
@@ -264,7 +264,7 @@
     <!-- deprecated blocks -->
 
     <block tag="admob-initialize"
-           code="com.stencyl.admob.AdMob.init(#1);"
+           code="com.stencyl.admob.AdMob.initSdk(#1);"
            type="action"
            returns="void"
            category="mobile"

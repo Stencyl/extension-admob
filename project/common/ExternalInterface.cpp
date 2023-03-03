@@ -13,106 +13,141 @@
 
 using namespace admobex;
 
-AutoGCRoot* adEventHandle = 0;
-AutoGCRoot* rewardEventHandle = 0;
-
 #ifdef IPHONE
 
-static void ads_set_ad_event_handle(value onEvent)
+static value admobex_initConfig(value testingAds, value loggingEnabled)
 {
-    adEventHandle = new AutoGCRoot(onEvent);
+    initConfig(val_bool(testingAds), val_bool(loggingEnabled));
+    return alloc_null();
 }
-DEFINE_PRIM(ads_set_ad_event_handle, 1);
+DEFINE_PRIM(admobex_initConfig,2);
 
-static void ads_set_reward_event_handle(value onEvent)
+static value admobex_resetConsent()
 {
-    rewardEventHandle = new AutoGCRoot(onEvent);
-}
-DEFINE_PRIM(ads_set_reward_event_handle, 1);
-
-static value admobex_init(value banner_id, value interstitial_id, value rewarded_id, value gravity_mode, value testing_ads){
-	init(val_string(banner_id),val_string(interstitial_id),val_string(rewarded_id),val_string(gravity_mode), val_bool(testing_ads));
-	return alloc_null();
-}
-DEFINE_PRIM(admobex_init,5);
-
-static value admobex_banner_show(){
-	showBanner();
-	return alloc_null();
-}
-DEFINE_PRIM(admobex_banner_show,0);
-
-static value admobex_banner_hide(){
-	hideBanner();
-	return alloc_null();
-}
-DEFINE_PRIM(admobex_banner_hide,0);
-
-static value admobex_banner_refresh(){
-	refreshBanner();
-	return alloc_null();
-}
-DEFINE_PRIM(admobex_banner_refresh,0);
-
-static value admobex_interstitial_load(){
-    loadInterstitial();
+    resetConsent();
     return alloc_null();
 }
-DEFINE_PRIM(admobex_interstitial_load,0);
+DEFINE_PRIM(admobex_resetConsent,0);
 
-static value admobex_interstitial_show(){
-	showInterstitial();
-	return alloc_null();
-}
-DEFINE_PRIM(admobex_interstitial_show,0);
-
-static value admobex_rewarded_load(){
-    loadRewarded();
+static value admobex_setupConsentForm(value testingConsent, value debugGeography, value underAgeOfConsent, value callbacks)
+{
+    setupConsentForm(val_bool(testingConsent), val_string(debugGeography), val_string(underAgeOfConsent), new AutoGCRoot(callbacks));
     return alloc_null();
 }
-DEFINE_PRIM(admobex_rewarded_load,0);
+DEFINE_PRIM(admobex_setupConsentForm,4);
 
-static value admobex_rewarded_show(){
-    showRewarded();
+static value admobex_loadConsentForm(value callbacks)
+{
+    loadConsentForm(new AutoGCRoot(callbacks));
     return alloc_null();
 }
-DEFINE_PRIM(admobex_rewarded_show,0);
+DEFINE_PRIM(admobex_loadConsentForm,1);
 
-static value admobex_banner_move(value gravity_mode){
-    setBannerPosition(val_string(gravity_mode));
-    return alloc_null();
-}
-DEFINE_PRIM(admobex_banner_move,1);
-
-static value admobex_showConsentForm(value checkConsent){
-    showConsentForm(val_bool(checkConsent));
+static value admobex_showConsentForm(value callbacks)
+{
+    showConsentForm(new AutoGCRoot(callbacks));
     return alloc_null();
 }
 DEFINE_PRIM(admobex_showConsentForm,1);
 
-static value admobex_setDebugGeography(value debugGeography){
-    setDebugGeography(val_string(debugGeography));
+static value admobex_initSdk(value callbacks)
+{
+    initSdk(new AutoGCRoot(callbacks));
     return alloc_null();
 }
-DEFINE_PRIM(admobex_setDebugGeography,1);
+DEFINE_PRIM(admobex_initSdk,1);
 
-static value admobex_setTagForChildDirectedTreatment(value tag){
-    setTagForChildDirectedTreatment(val_string(tag));
+static value admobex_updateRequestConfig(value childDirected, value underAgeOfConsent, value maxAdContentRating)
+{
+    updateRequestConfig(val_string(childDirected), val_string(underAgeOfConsent), val_string(maxAdContentRating));
     return alloc_null();
 }
-DEFINE_PRIM(admobex_setTagForChildDirectedTreatment,1);
+DEFINE_PRIM(admobex_updateRequestConfig,3);
 
-static value admobex_setTagForUnderAgeOfConsent(value tag){
-    setTagForUnderAgeOfConsent(val_string(tag));
-    return alloc_null();
+static value admobex_initBanner(value bannerId, value visible, value position, value callbacks)
+{
+    int result = initBanner(val_string(bannerId), val_bool(visible), val_string(position), new AutoGCRoot(callbacks));
+    return alloc_int(result);
 }
-DEFINE_PRIM(admobex_setTagForUnderAgeOfConsent,1);
+DEFINE_PRIM(admobex_initBanner,4);
 
-static value admobex_setMaxAdContentRating(value rating){
-    setMaxAdContentRating(val_string(rating));
+static value admobex_loadBanner(value bannerRef)
+{
+    loadBanner(val_int(bannerRef));
     return alloc_null();
 }
-DEFINE_PRIM(admobex_setMaxAdContentRating,1);
+DEFINE_PRIM(admobex_loadBanner,1);
+
+static value admobex_showBanner(value bannerRef)
+{
+    showBanner(val_int(bannerRef));
+    return alloc_null();
+}
+DEFINE_PRIM(admobex_showBanner,1);
+
+static value admobex_hideBanner(value bannerRef)
+{
+    hideBanner(val_int(bannerRef));
+    return alloc_null();
+}
+DEFINE_PRIM(admobex_hideBanner,1);
+
+static value admobex_setBannerPosition(value bannerRef, value position)
+{
+    setBannerPosition(val_int(bannerRef), val_string(position));
+    return alloc_null();
+}
+DEFINE_PRIM(admobex_setBannerPosition,2);
+
+static value admobex_disposeBanner(value bannerRef)
+{
+    disposeBanner(val_int(bannerRef));
+    return alloc_null();
+}
+DEFINE_PRIM(admobex_disposeBanner,1);
+
+static value admobex_loadInterstitial(value interstitialId, value callbacks)
+{
+    loadInterstitial(val_string(interstitialId), new AutoGCRoot(callbacks));
+    return alloc_null();
+}
+DEFINE_PRIM(admobex_loadInterstitial,2);
+
+static value admobex_showInterstitial(value interstitialRef)
+{
+    showInterstitial(val_int(interstitialRef));
+    return alloc_null();
+}
+DEFINE_PRIM(admobex_showInterstitial,1);
+
+static value admobex_loadRewarded(value rewardedId, value callbacks)
+{
+    loadRewarded(val_string(rewardedId), new AutoGCRoot(callbacks));
+    return alloc_null();
+}
+DEFINE_PRIM(admobex_loadRewarded,2);
+
+static value admobex_showRewarded(value rewardedRef, value callbacks)
+{
+    showRewarded(val_int(rewardedRef), new AutoGCRoot(callbacks));
+    return alloc_null();
+}
+DEFINE_PRIM(admobex_showRewarded,2);
+
+static value admobex_setFullScreenContentCallback(value adRef, value callbacks)
+{
+    setFullScreenContentCallback(val_int(adRef), new AutoGCRoot(callbacks));
+    return alloc_null();
+}
+DEFINE_PRIM(admobex_setFullScreenContentCallback,2);
+
+static value admobex_clearReference(value ref)
+{
+    clearReference(val_int(ref));
+    return alloc_null();
+}
+DEFINE_PRIM(admobex_clearReference,1);
+
 
 #endif
 
@@ -123,15 +158,3 @@ extern "C" void admobex_main () {
 DEFINE_ENTRY_POINT (admobex_main);
 
 extern "C" int admobex_register_prims () { return 0; }
-
-extern "C" void sendAdEvent(char* adType, char* adEventType)
-{
-    printf("Send Ad Event: %s %s\n",adType, adEventType);
-    val_call2(adEventHandle->get(), alloc_string(adType), alloc_string(adEventType));
-}
-
-extern "C" void sendRewardEvent(char* rewardType, double rewardAmount)
-{
-    printf("Send Reward Event: %s, %f\n", rewardType, rewardAmount);
-    val_call2(rewardEventHandle->get(), alloc_string(rewardType), alloc_float(rewardAmount));
-}

@@ -19,336 +19,94 @@
 
 using namespace admobex;
 
-extern "C" void sendAdEvent(const char* adType, const char* adEventType);
-extern "C" void sendRewardEvent(const char* rewardType, double rewardAmount);
+@interface AdmBanner : NSObject <GADBannerViewDelegate>
 
-@interface InitializeAdmobListener : NSObject
-    {
-        @public
-    }
-    
-- (id)initWithAdmobID:(NSString*)ID;
-    
-@end
-
-@interface InterstitialListener : NSObject<GADFullScreenContentDelegate>
-{
-    @public
-    GADInterstitialAd *interstitial;
-}
-
-+ (InterstitialListener*)getInterstitialListener;
-+ (void)setInterstitialListener:(InterstitialListener*)newListener;
-
-- (id)initWithID:(NSString*)ID;
-- (void)show;
-- (bool)isReady;
+-(instancetype)initWithBannerID:(NSString*)bannerId withVisbility:(BOOL)visible withGravity:(NSString*)gravity withCallbacks:(AutoGCRoot*)callbacks;
+-(void)loadAd;
+-(void)fadeIn;
+-(void)fadeOut;
+-(void)setPosition:(NSString *)gravity;
+-(void)dispose;
 
 @end
 
-@interface RewardedListener : NSObject<GADFullScreenContentDelegate>
-{
-    @public
-    GADRewardedAd *rewarded;
-}
+@interface AdmFullScreenContent : NSObject<GADFullScreenContentDelegate>
 
-+ (RewardedListener*)getRewardedListener;
-+ (void)setRewardedListener:(RewardedListener*)newListener;
-
-- (id)initWithID:(NSString*)ID;
-- (void)show;
-- (bool)isReady;
+-(instancetype)initWithCallbacks:(AutoGCRoot*)callbacks;
 
 @end
 
-@interface BannerListener : NSObject <GADBannerViewDelegate>
-{
-    @public
-    GADBannerView *bannerView;
+@interface AdmInterstitial : NSObject
+
+-(instancetype)initWithAd:(GADInterstitialAd*)ad;
+-(void)setFullScreenContentCallback:(AdmFullScreenContent*)contentCallback;
+-(void)showAd;
+
+@end
+
+@interface AdmRewarded : NSObject
+
+-(instancetype)initWithAd:(GADRewardedAd*)ad;
+-(void)setFullScreenContentCallback:(AdmFullScreenContent*)contentCallback;
+-(void)showAd:(AutoGCRoot*)rewardCallback;
+
+@end
+
+/**
+ Very simple scheme to share object references with
+ Haxe without worrying about ObjC ARC and HXCPP GC interactions
+ */
+@interface AdmForeignReferenceManager : NSObject
+
+-(id)getReference:(int)idx;
+-(int)addReference:(NSObject*)o;
+-(void)clearReference:(int)idx;
+
+@end
+
+static bool loggingEnabled = false;
+#define debugLog(...) if(loggingEnabled) NSLog(@"AdMobEx [debug] : %s %@", __PRETTY_FUNCTION__, [NSString stringWithFormat:__VA_ARGS__])
+
+@implementation AdmBanner {
+    NSLayoutConstraint *bannerHorizontalConstraint;
+    NSLayoutConstraint *bannerVerticalConstraint;
     UIViewController *root;
-    
-    BOOL bottom;
+    GADBannerView *bannerView;
+    AutoGCRoot *callbacks;
 }
 
-+ (BannerListener*)getBannerListener;
-+ (void)setBannerListener:(BannerListener*)newListener;
-
--(id)initWithBannerID:(NSString*)bannerID withGravity:(NSString*)GMODE;
--(void)setPosition:(NSString*)position;
--(void)showBannerAd;
--(void)hideBannerAd;
--(void)reloadBanner;
-
-@property (nonatomic, assign) BOOL bottom;
-
-@end
-
-@interface Consent : NSObject
-    {
-        @public
-    }
-
-+ (NSString*)getPublisherID;
-+ (void)setPublisherID:(NSString*)newID;
-
-+ (BOOL)getTesting;
-+ (void)setTesting:(BOOL)newTesting;
-
-+ (void)setDebugGeography:(UMPDebugGeography)newDebugGeography;
-
-+ (void)showConsentForm:(BOOL)checkConsent;
-+ (void)setupForm;
-+ (NSString*)admobDeviceID;
-+ (void)getConsentInfo;
-+ (void)loadForm;
-+ (void)showForm;
-+ (BOOL)consentHasBeenChecked;
-+ (GADRequest*)buildAdReq;
-    
-@end
-
-@implementation InitializeAdmobListener
-
-- (id)initWithAdmobID:(NSString*)ID
-{
-    self = [super init];
-    if(!self) return nil;
-
-    //[GADMobileAds configureWithApplicationID:ID]; DEPRECATED
-    [[GADMobileAds sharedInstance] startWithCompletionHandler:nil];
-    
-    return self;
-}
-    
-@end
-
-@implementation InterstitialListener
-
-static InterstitialListener *interstitialListener;
-static NSString* adId;
-
-+ (InterstitialListener*)getInterstitialListener
-{
-	return interstitialListener;
-}
-+ (void)setInterstitialListener:(InterstitialListener*)newListener
-{
-	if (interstitialListener != newListener)
-	{
-		interstitialListener = newListener;
-	}
-}
-
-/////Interstitial
-- (id)initWithID:(NSString*)ID
-{
-    self = [super init];
-    NSLog(@"AdMob Init Interstitial");
-    if(!self) return nil;
-    adId = ID;
-    [self loadAd];
-    return self;
-}
-
-- (void)loadAd
-{
-    if(![Consent consentHasBeenChecked])
-    {
-        sendAdEvent("interstitial", "fail");
-        NSLog(@"interstitialDidFailToReceiveAdWithError: User consent hasn't been checked yet");
-        return;
-    }
-    GADRequest *request = [Consent buildAdReq];
-    [GADInterstitialAd loadWithAdUnitID:adId
-                                request:request
-                      completionHandler:^(GADInterstitialAd *ad, NSError *error) {
-        if (error) {
-          sendAdEvent("interstitial", "fail");
-          NSLog(@"interstitialDidFailToReceiveAdWithError: %@", [error localizedDescription]);
-          return;
-        }
-        interstitial = ad;
-        sendAdEvent("interstitial", "load");
-        NSLog(@"interstitialDidReceiveAd");
-        interstitial.fullScreenContentDelegate = self;
-    }];
-}
-
-- (bool)isReady
-{
-    return interstitial != nil;
-}
-
-- (void)show
-{
-    if (!interstitial) return;
-    [interstitial presentFromRootViewController:[[[UIApplication sharedApplication] keyWindow] rootViewController]];
-}
-
-- (void)adWillPresentFullScreenContent:(id)ad
-{
-    sendAdEvent("interstitial", "open");
-    NSLog(@"interstitialWillPresentScreen");
-}
-
-- (void)ad:(id)ad didFailToPresentFullScreenContentWithError:(NSError *)error
-{
-    NSLog(@"Ad failed to present full screen content with error %@.", [error localizedDescription]);
-}
-
-- (void)adDidDismissFullScreenContent:(id)ad
-{
-    sendAdEvent("interstitial", "close");
-    NSLog(@"interstitialDidDismissScreen");
-}
-
-- (void)adDidRecordClick:(id)ad
-{
-    sendAdEvent("interstitial", "click");
-}
-
-@end
-
-@implementation RewardedListener
-
-static RewardedListener *rewardedListener;
-static NSString* rewardedAdId;
-
-+ (RewardedListener*)getRewardedListener
-{
-    return rewardedListener;
-}
-+ (void)setRewardedListener:(RewardedListener*)newListener
-{
-    if (rewardedListener != newListener)
-    {
-        rewardedListener = newListener;
-    }
-}
-
-/////IRewarded
-- (id)initWithID:(NSString*)ID
-{
-    self = [super init];
-    NSLog(@"AdMob Init Rewarded");
-    if(!self) return nil;
-    rewardedAdId = ID;
-    [self loadAd];
-    return self;
-}
-
-- (void)loadAd
-{
-    if(![Consent consentHasBeenChecked])
-    {
-        sendAdEvent("rewarded", "fail");
-        NSLog(@"rewardedDidFailToReceiveAdWithError: User consent hasn't been checked yet");
-        return;
-    }
-    GADRequest *request = [Consent buildAdReq];
-    [GADRewardedAd loadWithAdUnitID:rewardedAdId
-                                request:request
-                      completionHandler:^(GADRewardedAd *ad, NSError *error) {
-        if (error) {
-          sendAdEvent("rewarded", "fail");
-          NSLog(@"rewardedDidFailToReceiveAdWithError: %@", [error localizedDescription]);
-          return;
-        }
-        rewarded = ad;
-        sendAdEvent("rewarded", "load");
-        NSLog(@"rewardedDidReceiveAd");
-        rewarded.fullScreenContentDelegate = self;
-    }];
-}
-
-- (bool)isReady{
-    return rewarded != nil;
-}
-
-- (void)show
-{
-    if (!rewarded) return;
-    [rewarded
-      presentFromRootViewController:[[[UIApplication sharedApplication] keyWindow] rootViewController]
-           userDidEarnRewardHandler:^{
-        GADAdReward *reward = rewarded.adReward;
-        sendRewardEvent(reward.type.UTF8String, reward.amount.doubleValue);
-    }];
-}
-
-- (void)adWillPresentFullScreenContent:(id)ad
-{
-    sendAdEvent("rewarded", "open");
-    NSLog(@"rewardedWillPresentScreen");
-}
-
-- (void)ad:(id)ad didFailToPresentFullScreenContentWithError:(NSError *)error
-{
-    NSLog(@"Ad failed to present full screen content with error %@.", [error localizedDescription]);
-}
-
-- (void)adDidDismissFullScreenContent:(id)ad
-{
-    sendAdEvent("rewarded", "close");
-    NSLog(@"rewardedDidDismissScreen");
-}
-
-- (void)adDidRecordClick:(id)ad
-{
-    sendAdEvent("rewarded", "click");
-}
-
-@end
-
-@implementation BannerListener
-
-@synthesize bottom;
-
-static BannerListener *bannerListener;
-static NSLayoutConstraint *bannerHorizontalConstraint;
-static NSLayoutConstraint *bannerVerticalConstraint;
-static BOOL firstBannerLoad = NO;
-
-+ (BannerListener*)getBannerListener
-{
-	return bannerListener;
-}
-+ (void)setBannerListener:(BannerListener*)newListener
-{
-	if (bannerListener != newListener)
-	{
-		bannerListener = newListener;
-	}
-}
-
-/////Banner
--(id)initWithBannerID:(NSString*)bannerID withGravity:(NSString*)GMODE
+- (instancetype)
+    initWithBannerID:(NSString *)bannerId
+       withVisbility:(BOOL)visible
+         withGravity:(NSString *)gravity
+       withCallbacks:(AutoGCRoot *)_callbacks
 {
     self = [super init];
     NSLog(@"AdMob Init Banner");
     
     if(!self) return nil;
+    
     root = [[[UIApplication sharedApplication] keyWindow] rootViewController];
     
     GADAdSize adSize = [self getFullWidthAdaptiveAdSize];
     bannerView = [[GADBannerView alloc] initWithAdSize:adSize];
-    
-    bannerView.adUnitID = bannerID;
-    bannerView.rootViewController = root;
-    
-    if([Consent consentHasBeenChecked])
-    {
-        firstBannerLoad = YES;
-        GADRequest *request = [Consent buildAdReq];
-        [bannerView loadRequest:request];
-    }
-    bannerView.translatesAutoresizingMaskIntoConstraints = NO;
-    [root.view addSubview:bannerView];
-    
+    bannerView.adUnitID = bannerId;
+    callbacks = _callbacks;
     [bannerView setDelegate:self];
     
-    bannerView.hidden=true;
-    [self setPosition:GMODE];
+    bannerView.rootViewController = root;
+    bannerView.translatesAutoresizingMaskIntoConstraints = NO;
+    [root.view addSubview:bannerView];
+    [self setPosition:gravity];
+    if(visible)
+        [self fadeIn];
+    else
+        bannerView.hidden=true;
+    
+    static int _id_onAdHeightUpdated = val_id("onAdHeightUpdated");
+    CGSize adCgSize = CGSizeFromGADAdSize(adSize);
+    int adHeight = (int) roundf(adCgSize.height * [UIScreen mainScreen].nativeScale);
+    val_ocall1(callbacks->get(), _id_onAdHeightUpdated, alloc_int(adHeight));
     
     return self;
 }
@@ -361,9 +119,24 @@ static BOOL firstBannerLoad = NO;
   return GADCurrentOrientationAnchoredAdaptiveBannerAdSizeWithWidth(frame.size.width);
 }
 
--(void)setPosition:(NSString*)position
+- (void)loadAd
 {
-    bottom=[position isEqualToString:@"BOTTOM"];
+    [bannerView loadRequest:[GADRequest request]];
+}
+
+- (void)fadeIn
+{
+    bannerView.hidden = false;
+}
+
+- (void)fadeOut
+{
+    bannerView.hidden = true;
+}
+
+- (void)setPosition:(NSString*)position
+{
+    bool bottom = [position isEqualToString:@"BOTTOM"];
     
     if (bottom) // Reposition the adView to the bottom of the screen
     {
@@ -456,373 +229,493 @@ static BOOL firstBannerLoad = NO;
     [root.view addConstraints:@[bannerHorizontalConstraint,bannerVerticalConstraint]];
 }
 
--(void)showBannerAd
+- (void)dispose
 {
-    if(!firstBannerLoad)
-    {
-        [self reloadBanner];
-    }
-    bannerView.hidden=false;
-}
-
--(void)hideBannerAd
-{
-    bannerView.hidden=true;
-}
-
--(void)reloadBanner
-{
-	if(![Consent consentHasBeenChecked])
-    {
-        sendAdEvent("banner", "fail");
-        NSLog(@"AdMob: banner failed to load: User consent hasn't been checked yet");
-        return;
-    }
-    firstBannerLoad = YES;
-    GADRequest *request = [Consent buildAdReq];
-    [bannerView loadRequest:request];
+    [bannerView removeFromSuperview];
+    bannerView.delegate = nil;
+    bannerView = nil;
+    root = nil;
+    callbacks = nil;
 }
 
 /// Called when an banner ad request succeeded.
 - (void)bannerViewDidReceiveAd:(GADBannerView *)bannerView
 {
-    sendAdEvent("banner", "load");
-    NSLog(@"AdMob: banner ad successfully loaded!");
+    static int _id_onAdLoaded = val_id("onAdLoaded");
+    val_ocall0(callbacks->get(), _id_onAdLoaded);
 }
 
 /// Called when an banner ad request failed.
 - (void)bannerView:(GADBannerView *)bannerView didFailToReceiveAdWithError:(nonnull NSError *)error
 {
-    sendAdEvent("banner", "fail");
-    NSLog(@"AdMob: banner failed to load...");
+    static int _id_onAdFailedToLoad = val_id("onAdFailedToLoad");
+    val_ocall1(callbacks->get(), _id_onAdFailedToLoad, alloc_string([[error localizedDescription] UTF8String]));
 }
 
 - (void)bannerViewWillPresentScreen:(GADBannerView *)bannerView
 {
-    sendAdEvent("banner", "open");
-    NSLog(@"AdMob: banner was opened.");
+    static int _id_onAdOpened = val_id("onAdOpened");
+    val_ocall0(callbacks->get(), _id_onAdOpened);
 }
 
 /// Called before the banner is to be animated off the screen.
 - (void)bannerViewWillDismissScreen:(GADBannerView *)bannerView
 {
-    sendAdEvent("banner", "close");
-    NSLog(@"AdMob: banner was closed.");
+    static int _id_onAdClosed = val_id("onAdClosed");
+    val_ocall0(callbacks->get(), _id_onAdClosed);
 }
 
 - (void)bannerViewDidRecordClick:(GADBannerView *)bannerView
 {
-    sendAdEvent("banner", "click");
+    static int _id_onAdClicked = val_id("onAdClicked");
+    val_ocall0(callbacks->get(), _id_onAdClicked);
+}
+
+- (void)bannerViewDidRecordImpression:(GADBannerView *)bannerView
+{
+    static int _id_onAdImpression = val_id("onAdImpression");
+    val_ocall0(callbacks->get(), _id_onAdImpression);
 }
 
 @end
 
-@implementation Consent
-
-static NSString *publisherID;
-static BOOL testing = NO;
-static BOOL showWhenLoaded = NO;
-static BOOL consentChecked = NO;
-static UMPConsentForm* consentForm;
-static BOOL debugGeographySpecified = NO;
-static UMPDebugGeography debugGeography;
-
-+ (NSString*)getPublisherID
-{
-	return publisherID;
-}
-+ (void)setPublisherID:(NSString*)newID
-{
-	if (publisherID != newID)
-	{
-		publisherID = [newID copy];
-	}
+@implementation AdmFullScreenContent {
+    AutoGCRoot* callbacks;
 }
 
-+ (BOOL)getTesting
+- (instancetype)initWithCallbacks:(AutoGCRoot *)_callbacks
 {
-	return testing;
-}
-+ (void)setTesting:(BOOL)newTesting
-{
-	testing = newTesting;
-}
-
-+ (void)setDebugGeography:(UMPDebugGeography)newDebugGeography
-{
-    debugGeography = newDebugGeography;
-    debugGeographySpecified = YES;
-}
-
-+ (void)showConsentForm:(BOOL)checkConsent
-{
-    NSLog(@"consentsdk: showConsentForm");
+    self = [super init];
+    if(!self) return nil;
     
-    if (checkConsent && UMPConsentInformation.sharedInstance.consentStatus == UMPConsentStatusObtained)
+    callbacks = _callbacks;
+    
+    return self;
+}
+
+- (void)adWillPresentFullScreenContent:(id<GADFullScreenPresentingAd>)ad
+{
+    static int _id_onAdShowedFullScreenContent = val_id("onAdShowedFullScreenContent");
+    val_ocall0(callbacks->get(), _id_onAdShowedFullScreenContent);
+}
+
+- (void)ad:(id<GADFullScreenPresentingAd>)ad didFailToPresentFullScreenContentWithError:(NSError *)error
+{
+    static int _id_onAdFailedToShowFullScreenContent = val_id("onAdFailedToShowFullScreenContent");
+    val_ocall1(callbacks->get(), _id_onAdFailedToShowFullScreenContent, alloc_string([[error localizedDescription] UTF8String]));
+}
+
+- (void)adDidDismissFullScreenContent:(id<GADFullScreenPresentingAd>)ad
+{
+    static int _id_onAdDismissedFullScreenContent = val_id("onAdDismissedFullScreenContent");
+    val_ocall0(callbacks->get(), _id_onAdDismissedFullScreenContent);
+}
+
+- (void)adDidRecordClick:(id<GADFullScreenPresentingAd>)ad
+{
+    static int _id_onAdClicked = val_id("onAdClicked");
+    val_ocall0(callbacks->get(), _id_onAdClicked);
+}
+
+- (void)adDidRecordImpression:(id<GADFullScreenPresentingAd>)ad
+{
+    static int _id_onAdImpression = val_id("onAdImpression");
+    val_ocall0(callbacks->get(), _id_onAdImpression);
+}
+
+@end
+
+@implementation AdmInterstitial {
+    GADInterstitialAd *ad;
+}
+
+- (instancetype)initWithAd:(GADInterstitialAd *)_ad
+{
+    self = [super init];
+    if(!self) return nil;
+    
+    ad = _ad;
+    
+    return self;
+}
+
+- (void)showAd
+{
+    [ad presentFromRootViewController:[[[UIApplication sharedApplication] keyWindow] rootViewController]];
+}
+
+- (void)setFullScreenContentCallback:(AdmFullScreenContent *)contentCallback
+{
+    ad.fullScreenContentDelegate = contentCallback;
+}
+
+@end
+
+@implementation AdmRewarded {
+    GADRewardedAd *ad;
+}
+
+- (instancetype)initWithAd:(GADRewardedAd *)_ad
+{
+    self = [super init];
+    if(!self) return nil;
+    
+    ad = _ad;
+    
+    return self;
+}
+
+- (void)showAd:(AutoGCRoot *)rewardCallback
+{
+    static int _id_onUserEarnedReward = val_id("onUserEarnedReward");
+
+    [ad
+     presentFromRootViewController:[[[UIApplication sharedApplication] keyWindow] rootViewController]
+     userDidEarnRewardHandler:^{
+        GADAdReward *reward = ad.adReward;
+        val_ocall2(rewardCallback->get(), _id_onUserEarnedReward, alloc_string(reward.type.UTF8String), alloc_int(reward.amount.intValue));
+    }];
+}
+
+- (void)setFullScreenContentCallback:(AdmFullScreenContent *)contentCallback
+{
+    ad.fullScreenContentDelegate = contentCallback;
+}
+
+@end
+
+@implementation AdmForeignReferenceManager {
+    NSMutableArray *referenceArray;
+}
+
+- (instancetype)init
+{
+    self = [super init];
+    if(!self) return nil;
+    
+    referenceArray = [NSMutableArray arrayWithCapacity:5];
+    
+    return self;
+}
+
+- (id)getReference:(int)idx
+{
+    return referenceArray[idx];
+}
+
+- (int)addReference:(NSObject *)o
+{
+    int i = 0;
+    while(i < [referenceArray count] && referenceArray[i] != [NSNull null]) { ++i; }
+    if(i == [referenceArray count])
     {
-        NSLog(@"consentsdk: Skipping form because player already answered");
-        consentChecked = YES;
-        return;
-    }
-    
-    showWhenLoaded = YES;
-    
-    if (consentForm != nil)
-    {
-        [self showForm];
+        debugLog(@"Growing reference count past %lu", [referenceArray count]);
+        [referenceArray addObject:o];
     }
     else
     {
-        [self setupForm];
+        referenceArray[i] = o;
     }
+    return i;
 }
 
-+ (void)setupForm
+- (void)clearReference:(int)idx
 {
-    UMPRequestParameters *parameters = [[UMPRequestParameters alloc] init];
-    parameters.tagForUnderAgeOfConsent = NO;
-    if(testing)
-    {
-        UMPDebugSettings* debugSettings = [[UMPDebugSettings alloc] init];
-        if(debugGeographySpecified)
-            debugSettings.geography = debugGeography;
-        debugSettings.testDeviceIdentifiers = @[[self admobDeviceID]];
-        parameters.debugSettings = debugSettings;
-    }
-
-    [UMPConsentInformation.sharedInstance
-        requestConsentInfoUpdateWithParameters:parameters
-                             completionHandler:^(NSError *_Nullable error) {
-        if (error) {
-            NSLog(@"consentsdk: consent update failed with error: %@", [error localizedDescription]);
-        } else {
-            UMPFormStatus formStatus = UMPConsentInformation.sharedInstance.formStatus;
-            if (formStatus == UMPFormStatusAvailable) {
-                [self loadForm];
-            } else {
-                consentChecked = YES;
-                NSLog(@"consentsdk: no consent form available");
-            }
-        }
-    }];
+    referenceArray[idx] = [NSNull null];
 }
 
-// https://stackoverflow.com/a/25012633
-+ (NSString *)admobDeviceID
-{
-    NSUUID* adid = [[ASIdentifierManager sharedManager] advertisingIdentifier];
-    const char *cStr = [adid.UUIDString UTF8String];
-    unsigned char digest[16];
-    CC_MD5(cStr, strlen(cStr), digest);
-
-    NSMutableString *output = [NSMutableString stringWithCapacity:CC_MD5_DIGEST_LENGTH * 2];
-
-    for(int i = 0; i < CC_MD5_DIGEST_LENGTH; i++)
-        [output appendFormat:@"%02x", digest[i]];
-
-    return output;
-}
-
-+ (void)getConsentInfo
-{
-    NSLog(@"consentsdk: getConsentInfo");
-    
-    if (UMPConsentInformation.sharedInstance.consentStatus == UMPConsentStatusObtained)
-    {
-        NSLog(@"consentsdk: Skipping form because player already answered");
-        consentChecked = YES;
-        return;
-    }
-    
-    showWhenLoaded = NO;
-    [self setupForm];
-}
-
-+ (void)loadForm {
-    consentForm = nil;
-    
-    [UMPConsentForm loadWithCompletionHandler:^(UMPConsentForm *form,
-                                              NSError *loadError) {
-    if (loadError) {
-        NSLog(@"consentsdk: Form load failed with error: %@", [loadError localizedDescription]);
-    } else {
-        NSLog(@"consentsdk: Form has loaded.");
-        consentForm = form;
-        if(showWhenLoaded)
-        {
-            [self showForm];
-        }
-    }
-  }];
-}
-
-+ (void) showForm {
-    showWhenLoaded = false;
-    UIViewController *root = [[[UIApplication sharedApplication] keyWindow] rootViewController];
-    [consentForm
-        presentFromViewController:root
-                completionHandler:^(NSError *_Nullable dismissError) {
-        [self loadForm];
-        NSLog(@"consentsdk: consent form closed");
-        consentChecked = YES;
-    }];
-}
-
-+ (BOOL)consentHasBeenChecked
-{
-    return consentChecked;
-}
-
-+ (GADRequest*)buildAdReq
-{
-	GADRequest *request = [GADRequest request];
-
-	return request;
-}
-    
 @end
 
-
 namespace admobex {
-	
-    static InitializeAdmobListener *initializeAdmobListener;
-    static InterstitialListener *interstitialListener;
-    static RewardedListener *rewardedListener;
-    static BannerListener *bannerListener;
-    static NSString *interstitialID;
-    static NSString *rewardedID;
     
-	void init(const char *__BannerID, const char *__InterstitialID, const char *__RewardedID, const char *gravityMode, bool testingAds){
-        NSString *admobID = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"GADApplicationIdentifier"];
-        NSString *GMODE = [NSString stringWithUTF8String:gravityMode];
-        NSString *bannerID = [NSString stringWithUTF8String:__BannerID];
-        interstitialID = [NSString stringWithUTF8String:__InterstitialID];
-        rewardedID = [NSString stringWithUTF8String:__RewardedID];
+    static NSString *admobId;
+    static bool testingAds;
+    static NSString *deviceId;
 
-        NSString *pubID = [[admobID componentsSeparatedByString:@"~"] objectAtIndex:0];
-        [Consent setPublisherID:pubID];
-        [Consent setTesting:testingAds];
-        [Consent getConsentInfo];
+    static AdmForeignReferenceManager *refs;
+    static UMPConsentForm *consentForm;
 
-        if(testingAds){
-            admobID = @"ca-app-pub-3940256099942544~1458002511"; // ADMOB GENERIC TESTING appID
-            interstitialID = @"ca-app-pub-3940256099942544/4411468910"; // ADMOB GENERIC TESTING INTERSTITIAL
-            rewardedID = @"ca-app-pub-3940256099942544/1712485313"; // ADMOB GENERIC TESTING REWARDED
-            bannerID = @"ca-app-pub-3940256099942544/2934735716"; // ADMOB GENERIC TESTING BANNER
-        }
+    //forward declarations
+    NSString *admobDeviceID();
+    void applyUmpDebugGeography(UMPDebugSettings* debugSettings, const char *value);
+    void applyUmpTagForUnderAgeOfConsent(UMPRequestParameters* params, const char *value);
+    void applyGadTagForChildDirectedTreatment(GADRequestConfiguration* requestConfig, const char *value);
+    void applyGadTagForUnderAgeOfConsent(GADRequestConfiguration* requestConfig, const char *value);
+    void applyGadMaxAdContentRating(GADRequestConfiguration* requestConfig, const char *value);
+    
+    void initConfig(bool _testingAds, bool _loggingEnabled)
+    {
+        refs = [[AdmForeignReferenceManager alloc] init];
+        admobId = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"GADApplicationIdentifier"];
+        loggingEnabled = _loggingEnabled;
+        debugLog(@"initConfig(%d,%d)", _testingAds, _loggingEnabled);
         
-        initializeAdmobListener = [[InitializeAdmobListener alloc] initWithAdmobID:admobID];
+        testingAds = _testingAds;
+        if(_testingAds)
+        {
+            deviceId = admobDeviceID();
+        }
+    }
+
+    // https://stackoverflow.com/a/25012633
+    NSString *admobDeviceID()
+    {
+        NSUUID* adid = [[ASIdentifierManager sharedManager] advertisingIdentifier];
+        const char *cStr = [adid.UUIDString UTF8String];
+        unsigned char digest[16];
+        CC_MD5(cStr, strlen(cStr), digest);
+
+        NSMutableString *output = [NSMutableString stringWithCapacity:CC_MD5_DIGEST_LENGTH * 2];
+
+        for(int i = 0; i < CC_MD5_DIGEST_LENGTH; i++)
+            [output appendFormat:@"%02x", digest[i]];
+
+        return output;
+    }
+
+    void resetConsent()
+    {
+        debugLog(@"resetConsent()");
+        [UMPConsentInformation.sharedInstance reset];
+    }
+    
+    void setupConsentForm(bool testingConsent, const char* debugGeography, const char* underAgeOfConsent, AutoGCRoot* callbacks)
+    {
+        static int _id_onConsentInfoUpdateSuccess = val_id("onConsentInfoUpdateSuccess");
+        static int _id_onConsentInfoUpdateFailure = val_id("onConsentInfoUpdateFailure");
         
-        //Banner
-        if ([bannerID length] != 0) {
-            bannerListener = [[BannerListener alloc] initWithBannerID:bannerID withGravity:GMODE];
-            [BannerListener setBannerListener:bannerListener];
-        }
+        debugLog(@"setupConsentForm(%d,%s,%s)", testingConsent, debugGeography, underAgeOfConsent);
         
-        // INTERSTITIAL
-        if ([interstitialID length] != 0) {
-            interstitialListener = [[InterstitialListener alloc] initWithID:interstitialID];
-            [InterstitialListener setInterstitialListener:interstitialListener];
-        }
-
-        // REWARDED
-        if ([rewardedID length] != 0) {
-            rewardedListener = [[RewardedListener alloc] initWithID:rewardedID];
-            [RewardedListener setRewardedListener:rewardedListener];
-        }
-    }
-    
-    void setBannerPosition(const char *gravityMode)
-    {
-        if(bannerListener != NULL)
+        UMPRequestParameters *parameters = [[UMPRequestParameters alloc] init];
+        applyUmpTagForUnderAgeOfConsent(parameters, underAgeOfConsent);
+        if(testingConsent)
         {
-            NSString *GMODE = [NSString stringWithUTF8String:gravityMode];
-            
-            [bannerListener setPosition:GMODE];
+            UMPDebugSettings* debugSettings = [[UMPDebugSettings alloc] init];
+            applyUmpDebugGeography(debugSettings, debugGeography);
+            debugSettings.testDeviceIdentifiers = @[ [[[UIDevice currentDevice] identifierForVendor] UUIDString] ];
+            parameters.debugSettings = debugSettings;
         }
-    }
-    
-    void showBanner()
-    {
-        if(bannerListener != NULL)
-        {
-            [bannerListener showBannerAd];
-        }
-        
-    }
-    
-    void hideBanner()
-    {
-        if(bannerListener != NULL)
-        {
-            [bannerListener hideBannerAd];
-        }
-    }
-    
-	void refreshBanner()
-    {
-        if(bannerListener != NULL)
-        {
-            [bannerListener reloadBanner];
-        }
-	}
 
-    void loadInterstitial()
-    {
-        interstitialListener = [[InterstitialListener alloc] initWithID:interstitialID];
-    }
-    
-    void showInterstitial()
-    {
-        if(interstitialListener!=NULL) [interstitialListener show];
+        [UMPConsentInformation.sharedInstance
+            requestConsentInfoUpdateWithParameters:parameters
+                                 completionHandler:^(NSError *_Nullable error) {
+            if (error) {
+                val_ocall1(callbacks->get(), _id_onConsentInfoUpdateFailure, alloc_string([[error localizedDescription] UTF8String]));
+            } else {
+                UMPFormStatus formStatus = UMPConsentInformation.sharedInstance.formStatus;
+                val_ocall1(callbacks->get(), _id_onConsentInfoUpdateSuccess, alloc_bool(formStatus == UMPFormStatusAvailable));
+            }
+        }];
     }
 
-    void loadRewarded()
+    void applyUmpDebugGeography(UMPDebugSettings* debugSettings, const char *value)
     {
-        rewardedListener = [[RewardedListener alloc] initWithID:rewardedID];
-    }
-
-    void showRewarded()
-    {
-        if(rewardedListener!=NULL) [rewardedListener show];
-    }
-	
-    void showConsentForm(bool checkConsent)
-    {
-		[Consent showConsentForm:checkConsent];
-    }
-
-    void setDebugGeography(const char *value)
-    {
-        if     (strcmp(value, "eea")      == 0) [Consent setDebugGeography:UMPDebugGeographyEEA];
-        else if(strcmp(value, "not_eea")  == 0) [Consent setDebugGeography:UMPDebugGeographyNotEEA];
-        else if(strcmp(value, "disabled") == 0) [Consent setDebugGeography:UMPDebugGeographyDisabled];
+        if     (strcmp(value, "eea")      == 0) debugSettings.geography = UMPDebugGeographyEEA;
+        else if(strcmp(value, "not_eea")  == 0) debugSettings.geography = UMPDebugGeographyNotEEA;
+        else if(strcmp(value, "disabled") == 0) debugSettings.geography = UMPDebugGeographyDisabled;
         //do nothing for ""
     }
 
-    void setTagForChildDirectedTreatment(const char *value)
+    void applyUmpTagForUnderAgeOfConsent(UMPRequestParameters* params, const char *value)
     {
+        if     (strcmp(value, "true")  == 0) params.tagForUnderAgeOfConsent = true;
+        else if(strcmp(value, "false") == 0) params.tagForUnderAgeOfConsent = false;
+        //do nothing for ""
+    }
+
+    void loadConsentForm(AutoGCRoot* callbacks)
+    {
+        static int _id_onConsentFormLoadSuccess = val_id("onConsentFormLoadSuccess");
+        static int _id_onConsentFormLoadFailure = val_id("onConsentFormLoadFailure");
+        
+        debugLog(@"loadConsentForm()");
+        
+        consentForm = nil;
+        
+        [UMPConsentForm loadWithCompletionHandler:^(UMPConsentForm *form,
+                                                  NSError *loadError) {
+            if (loadError) {
+                val_ocall1(callbacks->get(), _id_onConsentFormLoadFailure, alloc_string([[loadError localizedDescription] UTF8String]));
+            } else {
+                consentForm = form;
+                val_ocall0(callbacks->get(), _id_onConsentFormLoadSuccess);
+            }
+        }];
+    }
+
+    void showConsentForm(AutoGCRoot* callbacks)
+    {
+        static int _id_onConsentFormDismissed = val_id("onConsentFormDismissed");
+        
+        debugLog(@"showConsentForm()");
+        
+        UIViewController *root = [[[UIApplication sharedApplication] keyWindow] rootViewController];
+        [consentForm
+            presentFromViewController:root
+                    completionHandler:^(NSError *_Nullable dismissError) {
+            if(dismissError)
+                val_ocall1(callbacks->get(), _id_onConsentFormDismissed, alloc_string([[dismissError localizedDescription] UTF8String]));
+            else
+                val_ocall1(callbacks->get(), _id_onConsentFormDismissed, alloc_string(""));
+        }];
+    }
+
+    void initSdk(AutoGCRoot* callbacks)
+    {
+        static int _id_onInitializationComplete = val_id("onInitializationComplete");
+        
+        debugLog(@"initSdk()");
+        
+        [[GADMobileAds sharedInstance] startWithCompletionHandler:^(GADInitializationStatus * _Nonnull status) {
+            val_ocall0(callbacks->get(), _id_onInitializationComplete);
+        }];
+    }
+
+    void updateRequestConfig(const char* childDirected, const char* underAgeOfConsent, const char* maxAdContentRating)
+    {
+        debugLog(@"updateRequestConfig(%s,%s,%s)", childDirected, underAgeOfConsent, maxAdContentRating);
         GADRequestConfiguration* requestConfig = [GADMobileAds.sharedInstance requestConfiguration];
+        applyGadTagForChildDirectedTreatment(requestConfig, childDirected);
+        applyGadTagForUnderAgeOfConsent(requestConfig, underAgeOfConsent);
+        applyGadMaxAdContentRating(requestConfig, maxAdContentRating);
+    }
+
+    void applyGadTagForChildDirectedTreatment(GADRequestConfiguration* requestConfig, const char *value)
+    {
         if     (strcmp(value, "true")  == 0) [requestConfig tagForChildDirectedTreatment:true];
         else if(strcmp(value, "false") == 0) [requestConfig tagForChildDirectedTreatment:false];
         //do nothing for ""
     }
 
-    void setTagForUnderAgeOfConsent(const char *value)
+    void applyGadTagForUnderAgeOfConsent(GADRequestConfiguration* requestConfig, const char *value)
     {
-        GADRequestConfiguration* requestConfig = [GADMobileAds.sharedInstance requestConfiguration];
         if     (strcmp(value, "true")  == 0) [requestConfig tagForUnderAgeOfConsent:true];
         else if(strcmp(value, "false") == 0) [requestConfig tagForUnderAgeOfConsent:false];
         //do nothing for ""
     }
 
-    void setMaxAdContentRating(const char *value)
+    void applyGadMaxAdContentRating(GADRequestConfiguration* requestConfig, const char *value)
     {
-        GADRequestConfiguration* requestConfig = [GADMobileAds.sharedInstance requestConfiguration];
         if     (strcmp(value, "G")  == 0) [requestConfig setMaxAdContentRating:GADMaxAdContentRatingGeneral];
         else if(strcmp(value, "PG") == 0) [requestConfig setMaxAdContentRating:GADMaxAdContentRatingParentalGuidance];
         else if(strcmp(value, "T")  == 0) [requestConfig setMaxAdContentRating:GADMaxAdContentRatingTeen];
         else if(strcmp(value, "MA") == 0) [requestConfig setMaxAdContentRating:GADMaxAdContentRatingMatureAudience];
         //do nothing for ""
+    }
+
+    int initBanner(const char* bannerId, bool visible, const char* position, AutoGCRoot* callbacks)
+    {
+        debugLog(@"initBanner(%s,%d,%s)", bannerId, visible, position);
+        
+        AdmBanner* banner = [[AdmBanner alloc]
+                             initWithBannerID:[NSString stringWithUTF8String:bannerId]
+                                withVisbility:visible
+                                  withGravity:[NSString stringWithUTF8String:position]
+                                withCallbacks:callbacks];
+        
+        return [refs addReference:banner];
+    }
+
+    void loadBanner(int bannerRef)
+    {
+        AdmBanner *banner = [refs getReference:bannerRef];
+        [banner loadAd];
+    }
+
+    void showBanner(int bannerRef)
+    {
+        AdmBanner *banner = [refs getReference:bannerRef];
+        [banner fadeIn];
+    }
+
+    void hideBanner(int bannerRef)
+    {
+        AdmBanner *banner = [refs getReference:bannerRef];
+        [banner fadeOut];
+    }
+
+    void setBannerPosition(int bannerRef, const char* position)
+    {
+        AdmBanner *banner = [refs getReference:bannerRef];
+        [banner setPosition:[NSString stringWithUTF8String:position]];
+    }
+
+    void disposeBanner(int bannerRef)
+    {
+        AdmBanner *banner = [refs getReference:bannerRef];
+        [banner dispose];
+    }
+
+    void loadInterstitial(const char* interstitialId, AutoGCRoot* callbacks)
+    {
+        static int _id_onAdLoaded = val_id("onAdLoaded");
+        static int _id_onAdFailedToLoad = val_id("onAdFailedToLoad");
+        
+        [GADInterstitialAd loadWithAdUnitID:[NSString stringWithUTF8String:interstitialId]
+                                    request:[GADRequest request]
+                          completionHandler:^(GADInterstitialAd *ad, NSError *error) {
+            
+            if (error) {
+                val_ocall1(callbacks->get(), _id_onAdFailedToLoad, alloc_string([[error localizedDescription] UTF8String]));
+                return;
+            }
+            
+            AdmInterstitial *interstitial = [[AdmInterstitial alloc] initWithAd:ad];
+            int interstitalRef = [refs addReference:interstitial];
+            
+            val_ocall1(callbacks->get(), _id_onAdLoaded, alloc_int(interstitalRef));
+        }];
+    }
+
+    void showInterstitial(int interstitialRef)
+    {
+        AdmInterstitial *interstital = [refs getReference:interstitialRef];
+        [interstital showAd];
+    }
+
+    void loadRewarded(const char* rewardedId, AutoGCRoot* callbacks)
+    {
+        static int _id_onAdLoaded = val_id("onAdLoaded");
+        static int _id_onAdFailedToLoad = val_id("onAdFailedToLoad");
+        
+        [GADRewardedAd loadWithAdUnitID:[NSString stringWithUTF8String:rewardedId]
+                                    request:[GADRequest request]
+                          completionHandler:^(GADRewardedAd *ad, NSError *error) {
+            
+            if (error) {
+                val_ocall1(callbacks->get(), _id_onAdFailedToLoad, alloc_string([[error localizedDescription] UTF8String]));
+                return;
+            }
+            
+            AdmRewarded *rewarded = [[AdmRewarded alloc] initWithAd:ad];
+            int rewardedRef = [refs addReference:rewarded];
+            
+            val_ocall1(callbacks->get(), _id_onAdLoaded, alloc_int(rewardedRef));
+        }];
+    }
+
+    void showRewarded(int rewardedRef, AutoGCRoot* callbacks)
+    {
+        AdmRewarded *rewarded = [refs getReference:rewardedRef];
+        [rewarded showAd:callbacks];
+    }
+
+    void setFullScreenContentCallback(int adRef, AutoGCRoot* callbacks)
+    {
+        NSObject *ad = [refs getReference:adRef];
+        
+        if([ad isKindOfClass:[AdmInterstitial class]]) {
+            AdmInterstitial *interstitial = (AdmInterstitial*) ad;
+            [interstitial setFullScreenContentCallback:[[AdmFullScreenContent alloc] initWithCallbacks:callbacks]];
+        }
+        else if([ad isKindOfClass:[AdmRewarded class]]) {
+            AdmRewarded *rewarded = (AdmRewarded*) ad;
+            [rewarded setFullScreenContentCallback:[[AdmFullScreenContent alloc] initWithCallbacks:callbacks]];
+        }
+    }
+
+    void clearReference(int ref)
+    {
+        [refs clearReference:ref];
     }
 }

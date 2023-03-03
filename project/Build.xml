@@ -20,12 +20,14 @@
 </files>
 
 <cocoapod name="Google-Mobile-Ads-SDK" version="9.14.0" />
+<cocoapod name="GoogleUserMessagingPlatform" version="2.0.1" />
 
 <files id="${id}-ios" dir="${this_dir}">
   <depend files="${id}-dependencies" />
   <cache value="1" project="${id}" asLibrary="true" />
   <compilerflag value="-I${this_dir}/include" />
   <compilerflag value="-F${cocoapod:Google-Mobile-Ads-SDK.frameworks.GoogleMobileAds.active_slice.dir}" />
+  <compilerflag value="-F${cocoapod:GoogleUserMessagingPlatform.frameworks.UserMessagingPlatform.active_slice.dir}" />
   <file name="ios/AdMobEx.mm" />
 </files>
 

@@ -1,24 +1,33 @@
 #ifndef ADMOBEX_H
 #define ADMOBEX_H
 
+#ifndef STATIC_LINK
+#define STATIC_LINK
+#endif
+
+#include <hx/CFFI.h>
 
 namespace admobex {
-	
-	
-	void init(const char *__BannerID, const char *__InterstitialID, const char *gravityMode, bool testingAds);
-    void setBannerPosition(const char *gravityMode);
-	void showBanner();
-	void hideBanner();
-	void refreshBanner();
-    void loadInterstitial();
-	void showInterstitial();
-    void loadRewarded();
-    void showRewarded();
-	void showConsentForm(bool checkConsent);
-    void setDebugGeography(const char *value);
-    void setTagForChildDirectedTreatment(const char *value);
-    void setTagForUnderAgeOfConsent(const char *value);
-    void setMaxAdContentRating(const char *value);
+
+    void initConfig(bool testingAds, bool loggingEnabled);
+    void resetConsent();
+    void setupConsentForm(bool testingConsent, const char* debugGeography, const char* underAgeOfConsent, AutoGCRoot* callbacks);
+    void loadConsentForm(AutoGCRoot* callbacks);
+    void showConsentForm(AutoGCRoot* callbacks);
+    void initSdk(AutoGCRoot* callbacks);
+    void updateRequestConfig(const char* childDirected, const char* underAgeOfConsent, const char* maxAdContentRating);
+    int initBanner(const char* bannerId, bool visible, const char* position, AutoGCRoot* callbacks);
+    void loadBanner(int bannerRef);
+    void showBanner(int bannerRef);
+    void hideBanner(int bannerRef);
+    void setBannerPosition(int bannerRef, const char* position);
+    void disposeBanner(int bannerRef);
+    void loadInterstitial(const char* interstitialId, AutoGCRoot* callbacks);
+    void showInterstitial(int interstitialRef);
+    void loadRewarded(const char* rewardedId, AutoGCRoot* callbacks);
+    void showRewarded(int rewardedRef, AutoGCRoot* callbacks);
+    void setFullScreenContentCallback(int adRef, AutoGCRoot* callbacks);
+    void clearReference(int ref);
 }
 
 
