@@ -64,6 +64,10 @@ fields.appID.label=AdMob Application Identifier
 fields.bannerKey.label=AdMob Banner Key
 fields.interstitialKey.label=AdMob Interstitial Key
 
+# build
+
+errors.appid=To enable ads in your game, your AdMob Application Identifier must be set.
+
 # deprecated
 
 admob-initialize=initialize AdMob ads with app ID %0 (set banner position to %1) [c:mobile]

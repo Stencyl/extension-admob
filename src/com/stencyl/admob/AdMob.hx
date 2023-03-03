@@ -6,7 +6,6 @@ import openfl.Lib;
 import lime.system.JNI;
 #end
 
-import com.stencyl.APIKeys;
 import com.stencyl.Config;
 import com.stencyl.Engine;
 import com.stencyl.event.EventMaster;
@@ -151,6 +150,7 @@ class AdMob {
 		#if ios
 		if(initialized) return;
 		initialized = true;
+		AdmobConfig.load();
 
 		try{
 			// CPP METHOD LINKING
@@ -164,7 +164,7 @@ class AdMob {
 			__setPrivacyURL = cpp.Lib.load("admobex","admobex_setPrivacyURL",1);
 			__showConsentForm = cpp.Lib.load("admobex","admobex_showConsentForm",1);
 
-			__init(APIKeys.iosAdmobAppID,APIKeys.ioswhirlID,APIKeys.ioswhirlID1,gravityMode,Config.testAds);
+			__init(AdmobConfig.iosAppID,AdmobConfig.iosBannerKey,AdmobConfig.iosInterstitialKey,gravityMode,AdmobConfig.enableTestAds);
 			set_event_handle(notifyListeners);
 		}catch(e:Dynamic){
 			trace("iOS INIT Exception: "+e);
@@ -174,6 +174,8 @@ class AdMob {
 		#if android
 		if(initialized) return;
 		initialized = true;
+		AdmobConfig.load();
+		
 		try{
 			// JNI METHOD LINKING
 			__showBanner = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "showBanner", "()V");
@@ -192,11 +194,11 @@ class AdMob {
 	
 			var args = new Array<Dynamic>();
 			args.push(new AdMob());
-			args.push(APIKeys.androidAdmobAppID);
-			args.push(APIKeys.whirlID);
-			args.push(APIKeys.whirlID1);
+			args.push(AdmobConfig.androidAppID);
+			args.push(AdmobConfig.androidBannerKey);
+			args.push(AdmobConfig.androidInterstitialKey);
 			args.push(gravityMode);
-			args.push(Config.testAds);
+			args.push(AdmobConfig.enableTestAds);
 			_init_func(args);
 		}catch(e:Dynamic){
 			trace("Android INIT Exception: "+e);
