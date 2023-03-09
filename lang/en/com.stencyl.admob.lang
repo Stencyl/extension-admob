@@ -44,8 +44,8 @@ event-mobile-ads.help=When ads are shown.
 event-mobile-ads-reward=when rewarded ad is completed %1 %2 [c:ad]
 event-mobile-ads-reward.help=This event occurs when a rewarded ad is completed. The reward should be given to the player.
 
-ad-reward-type=reward type
-ad-reward-amount=reward amount
+admob-ad-reward-type=reward type
+admob-ad-reward-amount=reward amount
 
 # block dropdowns
 

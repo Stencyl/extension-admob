@@ -59,14 +59,14 @@
         </context>
     </block>
 
-    <block tag="ad-reward-type"
+    <block tag="admob-ad-reward-type"
            code="rewardType"
            type="normal"
            hidden="true"
            returns="text"
            category="mobile"
            helpURL="event-mobile" />
-    <block tag="ad-reward-amount"
+    <block tag="admob-ad-reward-amount"
            code="rewardAmount"
            type="normal"
            hidden="true"
@@ -87,8 +87,8 @@
         </code>
         <fields>
             <code-block order="0" />
-            <attached-block order="1" tag="ad-reward-type"/>
-            <attached-block order="2" tag="ad-reward-amount"/>
+            <attached-block order="1" tag="admob-ad-reward-type"/>
+            <attached-block order="2" tag="admob-ad-reward-amount"/>
         </fields>
         <context>
             <innerContext type="class" value="com.stencyl.behavior.Script" />
