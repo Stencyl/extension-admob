@@ -10,12 +10,20 @@
 	<config classname="com.stencyl.admob.AdmobConfig">
 		<field name="enableTestAds"          type="boolean" />
 		<field name="enableTestConsent"      type="boolean" />
+		
+		
 		<field name="iosBannerKey"           type="text" embedded="true" if="ios"     regex="^$|^ca-app-pub-\d{16}\/\d{10}$" />
 		<field name="iosInterstitialKey"     type="text" embedded="true" if="ios"     regex="^$|^ca-app-pub-\d{16}\/\d{10}$" />
 		<field name="iosRewardedKey"         type="text" embedded="true" if="ios"     regex="^$|^ca-app-pub-\d{16}\/\d{10}$" />
+		<field name="iosRewardedInterstitialKey"
+			                                 type="text" embedded="true" if="ios"     regex="^$|^ca-app-pub-\d{16}\/\d{10}$" />
+		
+		
 		<field name="androidBannerKey"       type="text" embedded="true" if="android" regex="^$|^ca-app-pub-\d{16}\/\d{10}$" />
 		<field name="androidInterstitialKey" type="text" embedded="true" if="android" regex="^$|^ca-app-pub-\d{16}\/\d{10}$" />
 		<field name="androidRewardedKey"     type="text" embedded="true" if="android" regex="^$|^ca-app-pub-\d{16}\/\d{10}$" />
+		<field name="androidRewardedInterstitialKey"
+			                                 type="text" embedded="true" if="android" regex="^$|^ca-app-pub-\d{16}\/\d{10}$" />
 	</config>
 
 </game-data>

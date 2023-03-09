@@ -26,6 +26,8 @@ namespace admobex {
     void showInterstitial(int interstitialRef);
     void loadRewarded(const char* rewardedId, AutoGCRoot* callbacks);
     void showRewarded(int rewardedRef, AutoGCRoot* callbacks);
+    void loadRewardedInterstitial(const char* rewardedInterstitialId, AutoGCRoot* callbacks);
+    void showRewardedInterstitial(int rewardedInterstitialRef, AutoGCRoot* callbacks);
     void setFullScreenContentCallback(int adRef, AutoGCRoot* callbacks);
     void clearReference(int ref);
 }

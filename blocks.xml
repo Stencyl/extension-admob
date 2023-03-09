@@ -33,6 +33,11 @@
                     <c text="@event.mobile.rewarded.loaded" code="Type.enumEq(adEvent, AdEvent(REWARDED, LOADED))" />
                     <c text="@event.mobile.rewarded.failed" code="Type.enumEq(adEvent, AdEvent(REWARDED, FAILED_TO_LOAD))" />
                     <c text="@event.mobile.rewarded.clicked" code="Type.enumEq(adEvent, AdEvent(REWARDED, CLICKED))" />
+                    <c text="@event.mobile.rewardedinterstitial.viewed" code="Type.enumEq(adEvent, AdEvent(REWARDED_INTERSTITIAL, OPENED))" />
+                    <c text="@event.mobile.rewardedinterstitial.closed" code="Type.enumEq(adEvent, AdEvent(REWARDED_INTERSTITIAL, CLOSED))" />
+                    <c text="@event.mobile.rewardedinterstitial.loaded" code="Type.enumEq(adEvent, AdEvent(REWARDED_INTERSTITIAL, LOADED))" />
+                    <c text="@event.mobile.rewardedinterstitial.failed" code="Type.enumEq(adEvent, AdEvent(REWARDED_INTERSTITIAL, FAILED_TO_LOAD))" />
+                    <c text="@event.mobile.rewardedinterstitial.clicked" code="Type.enumEq(adEvent, AdEvent(REWARDED_INTERSTITIAL, CLICKED))" />
                 </choices>
             </dropdown>
             <code-block order="1" />
@@ -202,6 +207,22 @@
 
     <block tag="admob-show-rewarded"
            code="com.stencyl.admob.AdMob.~Rewarded();"
+           type="action"
+           returns="void"
+           category="mobile"
+           helpURL="game-mobile">
+        <fields>
+            <dropdown order="0">
+                <choices>
+                    <c text="@load" code="load" />
+                    <c text="@show" code="show" />
+                </choices>
+            </dropdown>
+        </fields>
+    </block>
+    
+    <block tag="admob-show-rewardedinterstitial"
+           code="com.stencyl.admob.AdMob.~RewardedInterstitial();"
            type="action"
            returns="void"
            category="mobile"

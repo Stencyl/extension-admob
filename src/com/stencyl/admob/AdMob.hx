@@ -47,6 +47,9 @@ class AdMob extends Extension
 	//rewarded
 	private static var rewardedRef:Int = NULL_FOREIGN_REF;
 
+	//rewarded interstitial
+	private static var rewardedInterstitialRef:Int = NULL_FOREIGN_REF;
+	
 	//consent form and ad requests
 	private static var debugGeography:String = "";
 	private static var childDirected = "";
@@ -64,10 +67,14 @@ class AdMob extends Extension
 	private static final testBannerKey       = "ca-app-pub-3940256099942544/6300978111";
 	private static final testInterstitialKey = "ca-app-pub-3940256099942544/1033173712";
 	private static final testRewardedKey     = "ca-app-pub-3940256099942544/5224354917";
+	private static final testRewardedInterstitialKey
+											 = "ca-app-pub-3940256099942544/5354046379";
 	#elseif (ios && testing)
 	private static final testBannerKey       = "ca-app-pub-3940256099942544/2934735716";
 	private static final testInterstitialKey = "ca-app-pub-3940256099942544/5135589807";
 	private static final testRewardedKey     = "ca-app-pub-3940256099942544/1712485313";
+	private static final testRewardedInterstitialKey
+											 = "ca-app-pub-3940256099942544/6978759866";
 	#end
 
 	//stencyl events
@@ -92,6 +99,8 @@ class AdMob extends Extension
 	private static var __showInterstitial:(interstitialRef:Int)->Void;
 	private static var __loadRewarded:(rewardedId:String, callbacks:AdLoadCallback)->Void;
 	private static var __showRewarded:(rewardedRef:Int, callbacks:OnUserEarnedRewardListener)->Void;
+	private static var __loadRewardedInterstitial:(rewardedInterstitialId:String, callbacks:AdLoadCallback)->Void;
+	private static var __showRewardedInterstitial:(rewardedInterstitialRef:Int, callbacks:OnUserEarnedRewardListener)->Void;
 	private static var __setContentCallback:(adRef:Int, callbacks:FullScreenContentCallback)->Void;
 	private static var __clearReference:(ref:Int)->Void;
 	
@@ -126,6 +135,8 @@ class AdMob extends Extension
 		__showInterstitial          = loadFunction1("showInterstitial"                #if android , '(I)V'         #end);
 		__loadRewarded              = loadFunction2("loadRewarded"                    #if android , '($s$o)V'      #end);
 		__showRewarded              = loadFunction2("showRewarded"                    #if android , '(I$o)V'       #end);
+		__loadRewardedInterstitial  = loadFunction2("loadRewardedInterstitial"        #if android , '($s$o)V'      #end);
+		__showRewardedInterstitial  = loadFunction2("showRewardedInterstitial"        #if android , '(I$o)V'       #end);
 		__setContentCallback        = loadFunction2("setFullScreenContentCallback"    #if android , '(I$o)V'       #end);
 		__clearReference            = loadFunction1("clearReference"                  #if android , '(I)V'         #end);
 		
@@ -411,6 +422,35 @@ class AdMob extends Extension
 		tryRun(() -> __showRewarded(rewardedRef, instance));
 	}
 
+	//Called from Design Mode
+	public static function loadRewardedInterstitial()
+	{
+		debugLog('loadRewardedInterstitial()');
+		var rewardedInterstitialId = 
+			#if testing if(AdmobConfig.enableTestAds) testRewardedInterstitialKey else #end
+			#if android AdmobConfig.androidRewardedInterstitialKey
+			#elseif ios AdmobConfig.iosRewardedInterstitialKey
+			#end;
+
+		tryRun(() -> __loadRewardedInterstitial(rewardedInterstitialId, new FullScreenCallbacks(REWARDED_INTERSTITIAL)));
+	}
+	
+	private static function updateRewardedInterstitialRef(ref:Int)
+	{
+		if(rewardedInterstitialRef != NULL_FOREIGN_REF)
+			tryRun(() -> __clearReference(rewardedInterstitialRef));
+		rewardedInterstitialRef = ref;
+	}
+	
+	//Called from Design Mode
+	public static function showRewardedInterstitial()
+	{
+		debugLog('showRewardedInterstitial()');
+		if(rewardedInterstitialRef == NULL_FOREIGN_REF) return;
+		
+		tryRun(() -> __showRewardedInterstitial(rewardedInterstitialRef, instance));
+	}
+
 	//OnUserEarnedRewardListener
 	public function onUserEarnedReward(rewardType:String, rewardAmount:Int):Void
 	{
@@ -509,6 +549,7 @@ enum AdType {
 	BANNER;
 	INTERSTITIAL;
 	REWARDED;
+	REWARDED_INTERSTITIAL;
 }
 
 enum AdEventType {
@@ -589,6 +630,7 @@ class FullScreenCallbacks implements AdLoadCallback implements FullScreenContent
 		{
 			case INTERSTITIAL: AdMob.updateInterstitialRef(adRef);
 			case REWARDED: AdMob.updateRewardedRef(adRef);
+			case REWARDED_INTERSTITIAL: AdMob.updateRewardedInterstitialRef(adRef);
 			case _:
 		}
 		

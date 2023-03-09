@@ -12,6 +12,7 @@
 #import <GoogleMobileAds/GADBannerViewDelegate.h>
 #import <GoogleMobileAds/GADInterstitialAd.h>
 #import <GoogleMobileAds/GADRewardedAd.h>
+#import <GoogleMobileAds/GADRewardedInterstitialAd.h>
 #import <GoogleMobileAds/GADMobileAds.h>
 #import <GoogleMobileAds/GADExtras.h>
 #include <CommonCrypto/CommonDigest.h>
@@ -47,6 +48,14 @@ using namespace admobex;
 @interface AdmRewarded : NSObject
 
 -(instancetype)initWithAd:(GADRewardedAd*)ad;
+-(void)setFullScreenContentCallback:(AdmFullScreenContent*)contentCallback;
+-(void)showAd:(AutoGCRoot*)rewardCallback;
+
+@end
+
+@interface AdmRewardedInterstitial : NSObject
+
+-(instancetype)initWithAd:(GADRewardedInterstitialAd*)ad;
 -(void)setFullScreenContentCallback:(AdmFullScreenContent*)contentCallback;
 -(void)showAd:(AutoGCRoot*)rewardCallback;
 
@@ -356,6 +365,39 @@ static bool loggingEnabled = false;
 }
 
 - (instancetype)initWithAd:(GADRewardedAd *)_ad
+{
+    self = [super init];
+    if(!self) return nil;
+    
+    ad = _ad;
+    
+    return self;
+}
+
+- (void)showAd:(AutoGCRoot *)rewardCallback
+{
+    static int _id_onUserEarnedReward = val_id("onUserEarnedReward");
+
+    [ad
+     presentFromRootViewController:[[[UIApplication sharedApplication] keyWindow] rootViewController]
+     userDidEarnRewardHandler:^{
+        GADAdReward *reward = ad.adReward;
+        val_ocall2(rewardCallback->get(), _id_onUserEarnedReward, alloc_string(reward.type.UTF8String), alloc_int(reward.amount.intValue));
+    }];
+}
+
+- (void)setFullScreenContentCallback:(AdmFullScreenContent *)contentCallback
+{
+    ad.fullScreenContentDelegate = contentCallback;
+}
+
+@end
+
+@implementation AdmRewardedInterstitial {
+    GADRewardedInterstitialAd *ad;
+}
+
+- (instancetype)initWithAd:(GADRewardedInterstitialAd *)_ad
 {
     self = [super init];
     if(!self) return nil;
@@ -698,6 +740,33 @@ namespace admobex {
     {
         AdmRewarded *rewarded = [refs getReference:rewardedRef];
         [rewarded showAd:callbacks];
+    }
+
+    void loadRewardedInterstitial(const char* rewardedInterstitialId, AutoGCRoot* callbacks)
+    {
+        static int _id_onAdLoaded = val_id("onAdLoaded");
+        static int _id_onAdFailedToLoad = val_id("onAdFailedToLoad");
+        
+        [GADRewardedInterstitialAd loadWithAdUnitID:[NSString stringWithUTF8String:rewardedInterstitialId]
+                                            request:[GADRequest request]
+                                  completionHandler:^(GADRewardedInterstitialAd *ad, NSError *error) {
+            
+            if (error) {
+                val_ocall1(callbacks->get(), _id_onAdFailedToLoad, alloc_string([[error localizedDescription] UTF8String]));
+                return;
+            }
+            
+            AdmRewardedInterstitial *rewardedInterstitial = [[AdmRewardedInterstitial alloc] initWithAd:ad];
+            int rewardedInterstitialRef = [refs addReference:rewardedInterstitial];
+            
+            val_ocall1(callbacks->get(), _id_onAdLoaded, alloc_int(rewardedInterstitialRef));
+        }];
+    }
+
+    void showRewardedInterstitial(int rewardedInterstitialRef, AutoGCRoot* callbacks)
+    {
+        AdmRewardedInterstitial *rewardedInterstitial = [refs getReference:rewardedInterstitialRef];
+        [rewardedInterstitial showAd:callbacks];
     }
 
     void setFullScreenContentCallback(int adRef, AutoGCRoot* callbacks)

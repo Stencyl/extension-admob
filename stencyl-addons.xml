@@ -15,6 +15,7 @@
 	        <block tag="admob-show-hide-banner" />
 	        <block tag="admob-show-fullscreen" />
 	        <block tag="admob-show-rewarded" />
+	        <block tag="admob-show-rewardedinterstitial" />
 	        <block tag="admob-reinit-banner" />
 	        <block tag="admob-setbanner-position" />
 			<block tag="iad-height" />
@@ -37,12 +38,14 @@
 		<field name="iosBannerKey" label="@fields.bannerKey.label" editor="SingleLine" />
 		<field name="iosInterstitialKey" label="@fields.interstitialKey.label" editor="SingleLine" />
 		<field name="iosRewardedKey" label="@fields.rewardedKey.label" editor="SingleLine" />
+		<field name="iosRewardedInterstitialKey" label="@fields.rewardedInterstitialKey.label" editor="SingleLine" />
 
 		<header label="@mobile.settings.money.admob.android" />
 		<field name="androidAppID" label="@fields.appID.label" editor="SingleLine" />
 		<field name="androidBannerKey" label="@fields.bannerKey.label" editor="SingleLine" />
 		<field name="androidInterstitialKey" label="@fields.interstitialKey.label" editor="SingleLine" />
 		<field name="androidRewardedKey" label="@fields.rewardedKey.label" editor="SingleLine" />
+		<field name="androidRewardedInterstitialKey" label="@fields.rewardedInterstitialKey.label" editor="SingleLine" />
 	</property-page-addon>
 
 </stencyl-addons>

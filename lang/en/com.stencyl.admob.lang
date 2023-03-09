@@ -12,6 +12,9 @@ admob-show-fullscreen.help=Load/Show AdMob fullscreen ads
 admob-show-rewarded=%0 AdMob rewarded ad [c:mobile]
 admob-show-rewarded.help=Load/Show AdMob rewarded ads
 
+admob-show-rewardedinterstitial=%0 AdMob rewarded interstitial ad [c:mobile]
+admob-show-rewardedinterstitial.help=Load/Show AdMob rewarded interstitial ads
+
 admob-reinit-banner=reinitialize AdMob banner [c:mobile]
 admob-reinit-banner.help=Reinitialize Admob banner.
 
@@ -75,6 +78,11 @@ event.mobile.rewarded.closed=a rewarded ad is closed
 event.mobile.rewarded.loaded=the rewarded ad area loads
 event.mobile.rewarded.failed=the rewarded ad area fails to load
 event.mobile.rewarded.clicked=the rewarded ad area is clicked
+event.mobile.rewardedinterstitial.viewed=a rewarded interstitial ad is showing
+event.mobile.rewardedinterstitial.closed=a rewarded interstitial ad is closed
+event.mobile.rewardedinterstitial.loaded=the rewarded interstitial ad area loads
+event.mobile.rewardedinterstitial.failed=the rewarded interstitial ad area fails to load
+event.mobile.rewardedinterstitial.clicked=the rewarded interstitial ad area is clicked
 
 events.defs.ads=Ads
 events.defs.ads.reward=Ad Reward
@@ -96,6 +104,7 @@ fields.appID.label=AdMob Application Identifier
 fields.bannerKey.label=AdMob Banner Key
 fields.interstitialKey.label=AdMob Interstitial Key
 fields.rewardedKey.label=AdMob Rewarded Key
+fields.rewardedInterstitialKey.label=AdMob Rewarded Interstitial Key
 
 # build
 

@@ -33,6 +33,8 @@ import com.google.android.gms.ads.*;
 import com.google.android.gms.ads.interstitial.*;
 import com.google.android.gms.ads.rewarded.RewardedAd;
 import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback;
+import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAd;
+import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAdLoadCallback;
 import com.google.android.ump.*;
 
 public class AdMobEx extends Extension
@@ -425,6 +427,43 @@ public class AdMobEx extends Extension
 		mainActivity.runOnUiThread(() -> {
 			debugLog("showRewarded.UI()");
 			rewarded.show(mainActivity, rewardItem -> {
+				debugLog(String.format(Locale.ENGLISH, "rewardReceived(%s, %d)", rewardItem.getType(), rewardItem.getAmount()));
+				callbacks.call("onUserEarnedReward", new Object[]{rewardItem.getType(), rewardItem.getAmount()});
+			});
+		});
+	}
+
+	@SuppressWarnings("unused") /* Called from Haxe */
+	public void loadRewardedInterstitial(String rewardedInterstitialId, HaxeObject callbacks)
+	{
+		debugLog(String.format("loadRewardedInterstitial(%s)", rewardedInterstitialId));
+		mainActivity.runOnUiThread(() -> {
+			debugLog("loadRewardedInterstitial.UI()");
+			RewardedInterstitialAd.load(mainContext, rewardedInterstitialId, buildAdReq(), new RewardedInterstitialAdLoadCallback()
+			{
+				@Override
+				public void onAdLoaded(@NonNull RewardedInterstitialAd rewardedInterstitialAd)
+				{
+					callbacks.call("onAdLoaded", new Object[] {refs.addReference(rewardedInterstitialAd)});
+				}
+
+				@Override
+				public void onAdFailedToLoad(@NonNull LoadAdError loadAdError)
+				{
+					callbacks.call("onAdFailedToLoad", new Object[] {loadAdError.toString()});
+				}
+			});
+		});
+	}
+
+	@SuppressWarnings("unused") /* Called from Haxe */
+	public void showRewardedInterstitial(int rewardedInterstitialRef, HaxeObject callbacks)
+	{
+		debugLog("showRewardedInterstitial()");
+		RewardedInterstitialAd rewardedInterstitial = refs.getReference(rewardedInterstitialRef);
+		mainActivity.runOnUiThread(() -> {
+			debugLog("showRewardedInterstitial.UI()");
+			rewardedInterstitial.show(mainActivity, rewardItem -> {
 				debugLog(String.format(Locale.ENGLISH, "rewardReceived(%s, %d)", rewardItem.getType(), rewardItem.getAmount()));
 				callbacks.call("onUserEarnedReward", new Object[]{rewardItem.getType(), rewardItem.getAmount()});
 			});

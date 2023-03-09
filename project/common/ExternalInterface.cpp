@@ -134,6 +134,20 @@ static value admobex_showRewarded(value rewardedRef, value callbacks)
 }
 DEFINE_PRIM(admobex_showRewarded,2);
 
+static value admobex_loadRewardedInterstitial(value rewardedInterstitialId, value callbacks)
+{
+    loadRewardedInterstitial(val_string(rewardedInterstitialId), new AutoGCRoot(callbacks));
+    return alloc_null();
+}
+DEFINE_PRIM(admobex_loadRewardedInterstitial,2);
+
+static value admobex_showRewardedInterstitial(value rewardedInterstitialRef, value callbacks)
+{
+    showRewardedInterstitial(val_int(rewardedInterstitialRef), new AutoGCRoot(callbacks));
+    return alloc_null();
+}
+DEFINE_PRIM(admobex_showRewardedInterstitial,2);
+
 static value admobex_setFullScreenContentCallback(value adRef, value callbacks)
 {
     setFullScreenContentCallback(val_int(adRef), new AutoGCRoot(callbacks));
