@@ -24,6 +24,7 @@
 			<block tag="admob-setChildDirectedTreatment" />
 			<block tag="admob-setUnderAgeOfConsent" />
 			<block tag="admob-setMaxAdContentRating" />
+			<block tag="admob-ad-is-type" />
 		</merge-section>
 	</palette-addon>
 

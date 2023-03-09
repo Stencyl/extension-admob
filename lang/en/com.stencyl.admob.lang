@@ -33,6 +33,9 @@ admob-setUnderAgeOfConsent.help=Set the "under age of consent" tag. This overrid
 admob-setMaxAdContentRating=set AdMob max ad content rating to %0 [c:mobile]
 admob-setMaxAdContentRating.help=Set the max ad content rating. This overrides the setting in the online AdMob dashboard.
 
+admob-ad-is-type=ad is %0
+admob-ad-is-type.help=check the type of ad this event is reacting to
+
 # events
 
 event-mobile-ads=when %0 [c:ad]
@@ -46,6 +49,10 @@ ad-reward-amount=reward amount
 
 # block dropdowns
 
+banner=banner ad
+interstitial=interstitial ad
+rewarded=rewarded ad
+rewardedinterstitial=rewarded interstitial ad
 bottom=bottom
 top=top
 show=show
@@ -73,16 +80,6 @@ event.mobile.fullads.closed=a fullscreen ad is closed
 event.mobile.fullads.loaded=the fullscreen ad area loads
 event.mobile.fullads.failed=the fullscreen ad area fails to load
 event.mobile.fullads.clicked=the fullscreen ad area is clicked
-event.mobile.rewarded.viewed=a rewarded ad is showing
-event.mobile.rewarded.closed=a rewarded ad is closed
-event.mobile.rewarded.loaded=the rewarded ad area loads
-event.mobile.rewarded.failed=the rewarded ad area fails to load
-event.mobile.rewarded.clicked=the rewarded ad area is clicked
-event.mobile.rewardedinterstitial.viewed=a rewarded interstitial ad is showing
-event.mobile.rewardedinterstitial.closed=a rewarded interstitial ad is closed
-event.mobile.rewardedinterstitial.loaded=the rewarded interstitial ad area loads
-event.mobile.rewardedinterstitial.failed=the rewarded interstitial ad area fails to load
-event.mobile.rewardedinterstitial.clicked=the rewarded interstitial ad area is clicked
 
 events.defs.ads=Ads
 events.defs.ads.reward=Ad Reward

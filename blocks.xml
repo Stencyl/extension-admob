@@ -3,6 +3,27 @@
     
     <!-- Events -->
     
+    <block tag="admob-ad-is-type"
+           code="adEvent.match(AdEvent(#0, _))"
+           type="normal"
+           returns="boolean"
+           category="mobile"
+           helpURL="event-mobile">
+        <fields>
+            <dropdown order="0">
+                <choices>
+                    <c text="@banner" code="BANNER" />
+                    <c text="@interstitial" code="INTERSTITIAL" />
+                    <c text="@rewarded" code="REWARDED" />
+                    <c text="@rewardedinterstitial" code="REWARDED_INTERSTITIAL" />
+                </choices>
+            </dropdown>
+        </fields>
+        <context>
+            <requiredContext type="has" value="adEvent:com.stencyl.admob.AdMob.AdEventData" />
+        </context>
+    </block>
+
     <block tag="event-mobile-ads"
            type="event"
            returns="void"
@@ -23,27 +44,18 @@
                     <c text="@event.mobile.ads.loaded" code="Type.enumEq(adEvent, AdEvent(BANNER, LOADED))" />
                     <c text="@event.mobile.ads.failed" code="Type.enumEq(adEvent, AdEvent(BANNER, FAILED_TO_LOAD))" />
                     <c text="@event.mobile.ads.clicked" code="Type.enumEq(adEvent, AdEvent(BANNER, CLICKED))" />
-                    <c text="@event.mobile.fullads.viewed" code="Type.enumEq(adEvent, AdEvent(INTERSTITIAL, OPENED))" />
-                    <c text="@event.mobile.fullads.closed" code="Type.enumEq(adEvent, AdEvent(INTERSTITIAL, CLOSED))" />
-                    <c text="@event.mobile.fullads.loaded" code="Type.enumEq(adEvent, AdEvent(INTERSTITIAL, LOADED))" />
-                    <c text="@event.mobile.fullads.failed" code="Type.enumEq(adEvent, AdEvent(INTERSTITIAL, FAILED_TO_LOAD))" />
-                    <c text="@event.mobile.fullads.clicked" code="Type.enumEq(adEvent, AdEvent(INTERSTITIAL, CLICKED))" />
-                    <c text="@event.mobile.rewarded.viewed" code="Type.enumEq(adEvent, AdEvent(REWARDED, OPENED))" />
-                    <c text="@event.mobile.rewarded.closed" code="Type.enumEq(adEvent, AdEvent(REWARDED, CLOSED))" />
-                    <c text="@event.mobile.rewarded.loaded" code="Type.enumEq(adEvent, AdEvent(REWARDED, LOADED))" />
-                    <c text="@event.mobile.rewarded.failed" code="Type.enumEq(adEvent, AdEvent(REWARDED, FAILED_TO_LOAD))" />
-                    <c text="@event.mobile.rewarded.clicked" code="Type.enumEq(adEvent, AdEvent(REWARDED, CLICKED))" />
-                    <c text="@event.mobile.rewardedinterstitial.viewed" code="Type.enumEq(adEvent, AdEvent(REWARDED_INTERSTITIAL, OPENED))" />
-                    <c text="@event.mobile.rewardedinterstitial.closed" code="Type.enumEq(adEvent, AdEvent(REWARDED_INTERSTITIAL, CLOSED))" />
-                    <c text="@event.mobile.rewardedinterstitial.loaded" code="Type.enumEq(adEvent, AdEvent(REWARDED_INTERSTITIAL, LOADED))" />
-                    <c text="@event.mobile.rewardedinterstitial.failed" code="Type.enumEq(adEvent, AdEvent(REWARDED_INTERSTITIAL, FAILED_TO_LOAD))" />
-                    <c text="@event.mobile.rewardedinterstitial.clicked" code="Type.enumEq(adEvent, AdEvent(REWARDED_INTERSTITIAL, CLICKED))" />
+                    <c text="@event.mobile.fullads.viewed" code="adEvent.match(AdEvent(INTERSTITIAL | REWARDED | REWARDED_INTERSTITIAL, OPENED))" />
+                    <c text="@event.mobile.fullads.closed" code="adEvent.match(AdEvent(INTERSTITIAL | REWARDED | REWARDED_INTERSTITIAL, CLOSED))" />
+                    <c text="@event.mobile.fullads.loaded" code="adEvent.match(AdEvent(INTERSTITIAL | REWARDED | REWARDED_INTERSTITIAL, LOADED))" />
+                    <c text="@event.mobile.fullads.failed" code="adEvent.match(AdEvent(INTERSTITIAL | REWARDED | REWARDED_INTERSTITIAL, FAILED_TO_LOAD))" />
+                    <c text="@event.mobile.fullads.clicked" code="adEvent.match(AdEvent(INTERSTITIAL | REWARDED | REWARDED_INTERSTITIAL, CLICKED))" />
                 </choices>
             </dropdown>
             <code-block order="1" />
         </fields>
         <context>
             <innerContext type="class" value="com.stencyl.behavior.Script" />
+            <innerContext type="has" value="adEvent:com.stencyl.admob.AdMob.AdEventData" />
         </context>
     </block>
 
