@@ -12,6 +12,8 @@ namespace admobex {
 	void refreshBanner();
     void loadInterstitial();
 	void showInterstitial();
+    void loadRewarded();
+    void showRewarded();
 	void showConsentForm(bool checkConsent);
     void setDebugGeography(const char *value);
     void setTagForChildDirectedTreatment(const char *value);

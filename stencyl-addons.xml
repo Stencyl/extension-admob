@@ -4,6 +4,7 @@
 	<events-addon target="stencyl-behavior-events">
 		<merge-section id="mobile.monetization">
 			<event block="event-mobile-ads" menuText="@events.defs.ads" description="@events.defs.ads" icon="ad" menuIcon="ad" />
+			<event block="event-mobile-ads-reward" menuText="@events.defs.ads.reward" description="@events.defs.ads.reward" icon="ad" menuIcon="ad" />
 		</merge-section>
 	</events-addon>
 
@@ -13,6 +14,7 @@
 	        <block tag="admob-initialize2" />
 	        <block tag="admob-show-hide-banner" />
 	        <block tag="admob-show-fullscreen" />
+	        <block tag="admob-show-rewarded" />
 	        <block tag="admob-reinit-banner" />
 	        <block tag="admob-setbanner-position" />
 			<block tag="iad-height" />
@@ -33,11 +35,13 @@
 		<field name="iosAppID" label="@fields.appID.label" editor="SingleLine" />
 		<field name="iosBannerKey" label="@fields.bannerKey.label" editor="SingleLine" />
 		<field name="iosInterstitialKey" label="@fields.interstitialKey.label" editor="SingleLine" />
+		<field name="iosRewardedKey" label="@fields.rewardedKey.label" editor="SingleLine" />
 
 		<header label="@mobile.settings.money.admob.android" />
 		<field name="androidAppID" label="@fields.appID.label" editor="SingleLine" />
 		<field name="androidBannerKey" label="@fields.bannerKey.label" editor="SingleLine" />
 		<field name="androidInterstitialKey" label="@fields.interstitialKey.label" editor="SingleLine" />
+		<field name="androidRewardedKey" label="@fields.rewardedKey.label" editor="SingleLine" />
 	</property-page-addon>
 
 </stencyl-addons>

@@ -11,6 +11,7 @@
 #import <GoogleMobileAds/GADBannerView.h>
 #import <GoogleMobileAds/GADBannerViewDelegate.h>
 #import <GoogleMobileAds/GADInterstitialAd.h>
+#import <GoogleMobileAds/GADRewardedAd.h>
 #import <GoogleMobileAds/GADMobileAds.h>
 #import <GoogleMobileAds/GADExtras.h>
 #include <CommonCrypto/CommonDigest.h>
@@ -19,6 +20,7 @@
 using namespace admobex;
 
 extern "C" void sendAdEvent(const char* adType, const char* adEventType);
+extern "C" void sendRewardEvent(const char* rewardType, double rewardAmount);
 
 @interface InitializeAdmobListener : NSObject
     {
@@ -37,6 +39,21 @@ extern "C" void sendAdEvent(const char* adType, const char* adEventType);
 
 + (InterstitialListener*)getInterstitialListener;
 + (void)setInterstitialListener:(InterstitialListener*)newListener;
+
+- (id)initWithID:(NSString*)ID;
+- (void)show;
+- (bool)isReady;
+
+@end
+
+@interface RewardedListener : NSObject<GADFullScreenContentDelegate>
+{
+    @public
+    GADRewardedAd *rewarded;
+}
+
++ (RewardedListener*)getRewardedListener;
++ (void)setRewardedListener:(RewardedListener*)newListener;
 
 - (id)initWithID:(NSString*)ID;
 - (void)show;
@@ -188,6 +205,97 @@ static NSString* adId;
 - (void)adDidRecordClick:(id)ad
 {
     sendAdEvent("interstitial", "click");
+}
+
+@end
+
+@implementation RewardedListener
+
+static RewardedListener *rewardedListener;
+static NSString* rewardedAdId;
+
++ (RewardedListener*)getRewardedListener
+{
+    return rewardedListener;
+}
++ (void)setRewardedListener:(RewardedListener*)newListener
+{
+    if (rewardedListener != newListener)
+    {
+        rewardedListener = newListener;
+    }
+}
+
+/////IRewarded
+- (id)initWithID:(NSString*)ID
+{
+    self = [super init];
+    NSLog(@"AdMob Init Rewarded");
+    if(!self) return nil;
+    rewardedAdId = ID;
+    [self loadAd];
+    return self;
+}
+
+- (void)loadAd
+{
+    if(![Consent consentHasBeenChecked])
+    {
+        sendAdEvent("rewarded", "fail");
+        NSLog(@"rewardedDidFailToReceiveAdWithError: User consent hasn't been checked yet");
+        return;
+    }
+    GADRequest *request = [Consent buildAdReq];
+    [GADRewardedAd loadWithAdUnitID:rewardedAdId
+                                request:request
+                      completionHandler:^(GADRewardedAd *ad, NSError *error) {
+        if (error) {
+          sendAdEvent("rewarded", "fail");
+          NSLog(@"rewardedDidFailToReceiveAdWithError: %@", [error localizedDescription]);
+          return;
+        }
+        rewarded = ad;
+        sendAdEvent("rewarded", "load");
+        NSLog(@"rewardedDidReceiveAd");
+        rewarded.fullScreenContentDelegate = self;
+    }];
+}
+
+- (bool)isReady{
+    return rewarded != nil;
+}
+
+- (void)show
+{
+    if (!rewarded) return;
+    [rewarded
+      presentFromRootViewController:[[[UIApplication sharedApplication] keyWindow] rootViewController]
+           userDidEarnRewardHandler:^{
+        GADAdReward *reward = rewarded.adReward;
+        sendRewardEvent(reward.type.UTF8String, reward.amount.doubleValue);
+    }];
+}
+
+- (void)adWillPresentFullScreenContent:(id)ad
+{
+    sendAdEvent("rewarded", "open");
+    NSLog(@"rewardedWillPresentScreen");
+}
+
+- (void)ad:(id)ad didFailToPresentFullScreenContentWithError:(NSError *)error
+{
+    NSLog(@"Ad failed to present full screen content with error %@.", [error localizedDescription]);
+}
+
+- (void)adDidDismissFullScreenContent:(id)ad
+{
+    sendAdEvent("rewarded", "close");
+    NSLog(@"rewardedDidDismissScreen");
+}
+
+- (void)adDidRecordClick:(id)ad
+{
+    sendAdEvent("rewarded", "click");
 }
 
 @end
@@ -579,15 +687,18 @@ namespace admobex {
 	
     static InitializeAdmobListener *initializeAdmobListener;
     static InterstitialListener *interstitialListener;
+    static RewardedListener *rewardedListener;
     static BannerListener *bannerListener;
     static NSString *interstitialID;
+    static NSString *rewardedID;
     
-	void init(const char *__BannerID, const char *__InterstitialID, const char *gravityMode, bool testingAds){
+	void init(const char *__BannerID, const char *__InterstitialID, const char *__RewardedID, const char *gravityMode, bool testingAds){
         NSString *admobID = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"GADApplicationIdentifier"];
         NSString *GMODE = [NSString stringWithUTF8String:gravityMode];
         NSString *bannerID = [NSString stringWithUTF8String:__BannerID];
         interstitialID = [NSString stringWithUTF8String:__InterstitialID];
-        
+        rewardedID = [NSString stringWithUTF8String:__RewardedID];
+
         NSString *pubID = [[admobID componentsSeparatedByString:@"~"] objectAtIndex:0];
         [Consent setPublisherID:pubID];
         [Consent setTesting:testingAds];
@@ -596,6 +707,7 @@ namespace admobex {
         if(testingAds){
             admobID = @"ca-app-pub-3940256099942544~1458002511"; // ADMOB GENERIC TESTING appID
             interstitialID = @"ca-app-pub-3940256099942544/4411468910"; // ADMOB GENERIC TESTING INTERSTITIAL
+            rewardedID = @"ca-app-pub-3940256099942544/1712485313"; // ADMOB GENERIC TESTING REWARDED
             bannerID = @"ca-app-pub-3940256099942544/2934735716"; // ADMOB GENERIC TESTING BANNER
         }
         
@@ -611,6 +723,12 @@ namespace admobex {
         if ([interstitialID length] != 0) {
             interstitialListener = [[InterstitialListener alloc] initWithID:interstitialID];
             [InterstitialListener setInterstitialListener:interstitialListener];
+        }
+
+        // REWARDED
+        if ([rewardedID length] != 0) {
+            rewardedListener = [[RewardedListener alloc] initWithID:rewardedID];
+            [RewardedListener setRewardedListener:rewardedListener];
         }
     }
     
@@ -657,6 +775,16 @@ namespace admobex {
     void showInterstitial()
     {
         if(interstitialListener!=NULL) [interstitialListener show];
+    }
+
+    void loadRewarded()
+    {
+        rewardedListener = [[RewardedListener alloc] initWithID:rewardedID];
+    }
+
+    void showRewarded()
+    {
+        if(rewardedListener!=NULL) [rewardedListener show];
     }
 	
     void showConsentForm(bool checkConsent)

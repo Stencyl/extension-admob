@@ -9,6 +9,9 @@ admob-show-hide-banner.help=Shows and hide the AdMob banner.
 admob-show-fullscreen=%0 AdMob fullscreen ad [c:mobile]
 admob-show-fullscreen.help=Load/Show AdMob fullscreen ads
 
+admob-show-rewarded=%0 AdMob rewarded ad [c:mobile]
+admob-show-rewarded.help=Load/Show AdMob rewarded ads
+
 admob-reinit-banner=reinitialize AdMob banner [c:mobile]
 admob-reinit-banner.help=Reinitialize Admob banner.
 
@@ -31,6 +34,12 @@ admob-setMaxAdContentRating.help=Set the max ad content rating. This overrides t
 
 event-mobile-ads=when %0 [c:ad]
 event-mobile-ads.help=When ads are shown.
+
+event-mobile-ads-reward=when rewarded ad is completed %1 %2 [c:ad]
+event-mobile-ads-reward.help=This event occurs when a rewarded ad is completed. The reward should be given to the player.
+
+ad-reward-type=reward type
+ad-reward-amount=reward amount
 
 # block dropdowns
 
@@ -61,8 +70,14 @@ event.mobile.fullads.closed=a fullscreen ad is closed
 event.mobile.fullads.loaded=the fullscreen ad area loads
 event.mobile.fullads.failed=the fullscreen ad area fails to load
 event.mobile.fullads.clicked=the fullscreen ad area is clicked
+event.mobile.rewarded.viewed=a rewarded ad is showing
+event.mobile.rewarded.closed=a rewarded ad is closed
+event.mobile.rewarded.loaded=the rewarded ad area loads
+event.mobile.rewarded.failed=the rewarded ad area fails to load
+event.mobile.rewarded.clicked=the rewarded ad area is clicked
 
 events.defs.ads=Ads
+events.defs.ads.reward=Ad Reward
 
 # gui
 
@@ -79,6 +94,7 @@ mobile.settings.money.admob.android=AdMob Ads - Android
 fields.appID.label=AdMob Application Identifier
 fields.bannerKey.label=AdMob Banner Key
 fields.interstitialKey.label=AdMob Interstitial Key
+fields.rewardedKey.label=AdMob Rewarded Key
 
 # build
 

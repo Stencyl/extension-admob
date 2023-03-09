@@ -14,6 +14,7 @@
 using namespace admobex;
 
 AutoGCRoot* adEventHandle = 0;
+AutoGCRoot* rewardEventHandle = 0;
 
 #ifdef IPHONE
 
@@ -23,11 +24,17 @@ static void ads_set_ad_event_handle(value onEvent)
 }
 DEFINE_PRIM(ads_set_ad_event_handle, 1);
 
-static value admobex_init(value banner_id, value interstitial_id, value gravity_mode, value testing_ads){
-	init(val_string(banner_id),val_string(interstitial_id), val_string(gravity_mode), val_bool(testing_ads));
+static void ads_set_reward_event_handle(value onEvent)
+{
+    rewardEventHandle = new AutoGCRoot(onEvent);
+}
+DEFINE_PRIM(ads_set_reward_event_handle, 1);
+
+static value admobex_init(value banner_id, value interstitial_id, value rewarded_id, value gravity_mode, value testing_ads){
+	init(val_string(banner_id),val_string(interstitial_id),val_string(rewarded_id),val_string(gravity_mode), val_bool(testing_ads));
 	return alloc_null();
 }
-DEFINE_PRIM(admobex_init,4);
+DEFINE_PRIM(admobex_init,5);
 
 static value admobex_banner_show(){
 	showBanner();
@@ -58,6 +65,18 @@ static value admobex_interstitial_show(){
 	return alloc_null();
 }
 DEFINE_PRIM(admobex_interstitial_show,0);
+
+static value admobex_rewarded_load(){
+    loadRewarded();
+    return alloc_null();
+}
+DEFINE_PRIM(admobex_rewarded_load,0);
+
+static value admobex_rewarded_show(){
+    showRewarded();
+    return alloc_null();
+}
+DEFINE_PRIM(admobex_rewarded_show,0);
 
 static value admobex_banner_move(value gravity_mode){
     setBannerPosition(val_string(gravity_mode));
@@ -109,4 +128,10 @@ extern "C" void sendAdEvent(char* adType, char* adEventType)
 {
     printf("Send Ad Event: %s %s\n",adType, adEventType);
     val_call2(adEventHandle->get(), alloc_string(adType), alloc_string(adEventType));
+}
+
+extern "C" void sendRewardEvent(char* rewardType, double rewardAmount)
+{
+    printf("Send Reward Event: %s, %f\n", rewardType, rewardAmount);
+    val_call2(rewardEventHandle->get(), alloc_string(rewardType), alloc_float(rewardAmount));
 }

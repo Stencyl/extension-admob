@@ -32,6 +32,7 @@ class AdMob extends Extension
 	}
 
 	public var adEvent:Event<(AdEventData)->Void> = new Event<(AdEventData)->Void>();
+	public var rewardEvent:Event<(rewardType:String, rewardAmount:Float)->Void> = new Event<(String,Float)->Void>();
 	public var nativeEventQueue:Array<AdEventData> = [];
 	
 	private static var initialized:Bool=false;
@@ -45,6 +46,8 @@ class AdMob extends Extension
 	private static var __hideBanner:Void->Void = function(){};
 	private static var __loadInterstitial:Void->Void = function(){};
 	private static var __showInterstitial:Void->Void = function(){};
+	private static var __loadRewarded:Void->Void = function(){};
+	private static var __showRewarded:Void->Void = function(){};
 	private static var __onResize:Void->Void = function(){};
 	private static var __refresh:Void->Void = function(){};
 	private static var __setBannerPosition:String->Void = function(gravityMode:String){};
@@ -76,6 +79,22 @@ class AdMob extends Extension
 			trace("ShowInterstitial Exception: "+e);
 		}
 	}
+
+	public static function loadRewarded() {
+		try{
+			__loadRewarded();
+		}catch(e:Dynamic){
+			trace("LoadRewarded Exception: "+e);
+		}
+	}
+	
+	public static function showRewarded() {
+		try{
+			__showRewarded();
+		}catch(e:Dynamic){
+			trace("ShowRewarded Exception: "+e);
+		}
+	}
 	
 	public static function init(position:Int){
 		if(position == 1)
@@ -93,12 +112,15 @@ class AdMob extends Extension
 		#if ios
 		try{
 			// CPP METHOD LINKING
-			var __init = cpp.Lib.load("adMobEx","admobex_init",4);
+			var __init = cpp.Lib.load("adMobEx","admobex_init",5);
 			var set_ad_event_handle = cpp.Lib.load("adMobEx", "ads_set_ad_event_handle", 1);
+			var set_reward_event_handle = cpp.Lib.load("adMobEx", "ads_set_reward_event_handle", 1);
 			__showBanner = cpp.Lib.load("adMobEx","admobex_banner_show",0);
 			__hideBanner = cpp.Lib.load("adMobEx","admobex_banner_hide",0);
 			__loadInterstitial = cpp.Lib.load("admobex","admobex_interstitial_load",0);
 			__showInterstitial = cpp.Lib.load("admobex","admobex_interstitial_show",0);
+			__loadRewarded = cpp.Lib.load("admobex","admobex_rewarded_load",0);
+			__showRewarded = cpp.Lib.load("admobex","admobex_rewarded_show",0);
 			__refresh = cpp.Lib.load("adMobEx","admobex_banner_refresh",0);
 			__setBannerPosition = cpp.Lib.load("admobex","admobex_banner_move",1);
 			__showConsentForm = cpp.Lib.load("admobex","admobex_showConsentForm",1);
@@ -107,8 +129,9 @@ class AdMob extends Extension
 			__setUnderAgeOfConsent = cpp.Lib.load("admobex","admobex_setTagForUnderAgeOfConsent",1);
 			__setMaxAdContentRating = cpp.Lib.load("admobex","admobex_setMaxAdContentRating",1);
 
-			__init(AdmobConfig.iosBannerKey,AdmobConfig.iosInterstitialKey,gravityMode,AdmobConfig.enableTestAds);
+			__init(AdmobConfig.iosBannerKey,AdmobConfig.iosInterstitialKey,AdmobConfig.iosRewardedKey,gravityMode,AdmobConfig.enableTestAds);
 			set_ad_event_handle(onAdmobAdEvent);
+			set_reward_event_handle(onAdmobRewardEvent);
 		}catch(e:Dynamic){
 			trace("iOS INIT Exception: "+e);
 		}
@@ -121,6 +144,8 @@ class AdMob extends Extension
 			__hideBanner = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "hideBanner", "()V");
 			__loadInterstitial = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "loadInterstitial", "()V");
 			__showInterstitial = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "showInterstitial", "()V");
+			__loadRewarded = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "loadRewarded", "()V");
+			__showRewarded = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "showRewarded", "()V");
 			__onResize = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "onResize", "()V");
 			__setBannerPosition = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "setBannerPosition", "(Ljava/lang/String;)V");
 			__showConsentForm = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "showConsentForm", "(Z)V");
@@ -129,12 +154,13 @@ class AdMob extends Extension
 			__setUnderAgeOfConsent = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "setTagForUnderAgeOfConsent", "(Ljava/lang/String;)V");
 			__setMaxAdContentRating = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "setMaxAdContentRating", "(Ljava/lang/String;)V");
 
-			var _init_func = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "init", "(Lorg/haxe/lime/HaxeObject;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Z)V", true);
+			var _init_func = JNI.createStaticMethod("com/byrobin/admobex/AdMobEx", "init", "(Lorg/haxe/lime/HaxeObject;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Z)V", true);
 	
 			var args = new Array<Dynamic>();
 			args.push(instance);
 			args.push(AdmobConfig.androidBannerKey);
 			args.push(AdmobConfig.androidInterstitialKey);
+			args.push(AdmobConfig.androidRewardedKey);
 			args.push(gravityMode);
 			args.push(AdmobConfig.enableTestAds);
 			_init_func(args);
@@ -247,6 +273,7 @@ class AdMob extends Extension
 		{
 			case "banner": BANNER;
 			case "interstitial": INTERSTITIAL;
+			case "rewarded": REWARDED;
 			default: null;
 		}
 		
@@ -266,11 +293,22 @@ class AdMob extends Extension
 		}
 	}
 
+	public function onAdmobRewardEvent(rewardType:String, rewardAmount:Float)
+	{
+		nativeEventQueue.push(RewardEvent(rewardType, rewardAmount));
+	}
+
 	public override function preSceneUpdate()
 	{
 		for(event in nativeEventQueue)
 		{
-			adEvent.dispatch(event);
+			switch(event)
+			{
+				case AdEvent(_, _):
+					adEvent.dispatch(event);
+				case RewardEvent(rewardType, rewardAmount):
+					rewardEvent.dispatch(rewardType, rewardAmount);
+			}
 		}
 		nativeEventQueue.splice(0, nativeEventQueue.length);
 	}
@@ -278,11 +316,13 @@ class AdMob extends Extension
 
 enum AdEventData {
 	AdEvent(adType:AdType, adEventType:AdEventType);
+	RewardEvent(rewardType:String, rewardAmount:Float);
 }
 
 enum AdType {
 	BANNER;
 	INTERSTITIAL;
+	REWARDED;
 }
 
 enum AdEventType {

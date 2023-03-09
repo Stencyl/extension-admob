@@ -28,9 +28,50 @@
                     <c text="@event.mobile.fullads.loaded" code="Type.enumEq(adEvent, AdEvent(INTERSTITIAL, LOADED))" />
                     <c text="@event.mobile.fullads.failed" code="Type.enumEq(adEvent, AdEvent(INTERSTITIAL, FAILED_TO_LOAD))" />
                     <c text="@event.mobile.fullads.clicked" code="Type.enumEq(adEvent, AdEvent(INTERSTITIAL, CLICKED))" />
+                    <c text="@event.mobile.rewarded.viewed" code="Type.enumEq(adEvent, AdEvent(REWARDED, OPENED))" />
+                    <c text="@event.mobile.rewarded.closed" code="Type.enumEq(adEvent, AdEvent(REWARDED, CLOSED))" />
+                    <c text="@event.mobile.rewarded.loaded" code="Type.enumEq(adEvent, AdEvent(REWARDED, LOADED))" />
+                    <c text="@event.mobile.rewarded.failed" code="Type.enumEq(adEvent, AdEvent(REWARDED, FAILED_TO_LOAD))" />
+                    <c text="@event.mobile.rewarded.clicked" code="Type.enumEq(adEvent, AdEvent(REWARDED, CLICKED))" />
                 </choices>
             </dropdown>
             <code-block order="1" />
+        </fields>
+        <context>
+            <innerContext type="class" value="com.stencyl.behavior.Script" />
+        </context>
+    </block>
+
+    <block tag="ad-reward-type"
+           code="rewardType"
+           type="normal"
+           hidden="true"
+           returns="text"
+           category="mobile"
+           helpURL="event-mobile" />
+    <block tag="ad-reward-amount"
+           code="rewardAmount"
+           type="normal"
+           hidden="true"
+           returns="number"
+           category="mobile"
+           helpURL="event-mobile" />
+    <block tag="event-mobile-ads-reward"
+           type="event"
+           returns="void"
+           category="events"
+           helpURL="event-mobile">
+        <code>
+            <event-def
+                listener="addListener(com.stencyl.admob.AdMob.get().rewardEvent, ${eventRef});"
+                params="rewardType:String, rewardAmount:Float"
+                condition="true"
+                innerCode="#0" />
+        </code>
+        <fields>
+            <code-block order="0" />
+            <attached-block order="1" tag="ad-reward-type"/>
+            <attached-block order="2" tag="ad-reward-amount"/>
         </fields>
         <context>
             <innerContext type="class" value="com.stencyl.behavior.Script" />
@@ -145,6 +186,22 @@
     
     <block tag="admob-show-fullscreen"
            code="com.stencyl.admob.AdMob.~Interstitial();"
+           type="action"
+           returns="void"
+           category="mobile"
+           helpURL="game-mobile">
+        <fields>
+            <dropdown order="0">
+                <choices>
+                    <c text="@load" code="load" />
+                    <c text="@show" code="show" />
+                </choices>
+            </dropdown>
+        </fields>
+    </block>
+
+    <block tag="admob-show-rewarded"
+           code="com.stencyl.admob.AdMob.~Rewarded();"
            type="action"
            returns="void"
            category="mobile"

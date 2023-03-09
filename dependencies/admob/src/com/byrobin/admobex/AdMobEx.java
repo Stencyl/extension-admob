@@ -33,6 +33,9 @@ import com.google.android.gms.ads.*;
 import com.google.android.gms.ads.initialization.InitializationStatus;
 import com.google.android.gms.ads.initialization.OnInitializationCompleteListener;
 import com.google.android.gms.ads.interstitial.*;
+import com.google.android.gms.ads.rewarded.RewardItem;
+import com.google.android.gms.ads.rewarded.RewardedAd;
+import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback;
 import com.google.android.ump.*;
 
 public class AdMobEx extends Extension {
@@ -41,6 +44,7 @@ public class AdMobEx extends Extension {
 	//////////////////////////////////////////////////////////////////////////////////////////////////
 
 	private static InterstitialAd interstitial;
+	private static RewardedAd rewarded;
 	private static AdView banner = null;
     private static LinearLayout layout;
 	private static HaxeObject callback;
@@ -53,6 +57,7 @@ public class AdMobEx extends Extension {
 	private static String admobId=null;
     
 	private static String interstitialId=null;
+	private static String rewardedId=null;
 
 	private static boolean failBanner=false;
 	private static boolean loadingBanner=false;
@@ -133,12 +138,13 @@ public class AdMobEx extends Extension {
 		return instance;
 	}
 
-	static public void init(HaxeObject cb, String bannerId, String interstitialId, String gravityMode, boolean testingAds){
+	static public void init(HaxeObject cb, String bannerId, String interstitialId, String rewardedId, String gravityMode, boolean testingAds){
         
         callback = cb;
         AdMobEx.admobId=mainActivity.getResources().getString(R.string.admob_app_id);
 		AdMobEx.bannerId=bannerId;
 		AdMobEx.interstitialId=interstitialId;
+		AdMobEx.rewardedId=rewardedId;
 		AdMobEx.testingAds=testingAds;
 		setBannerPosition(gravityMode);
 		
@@ -170,6 +176,27 @@ public class AdMobEx extends Extension {
 			public void run() {	if(interstitial != null) interstitial.show(mainActivity);	}
 		});
 		Log.d(TAG,"Show Interstitial End");
+	}
+
+	static public void loadRewarded() {
+		Log.d(TAG,"Load Rewarded Begin");
+		if(rewardedId.isEmpty()) return;
+		mainActivity.runOnUiThread(new Runnable() {
+			public void run() { reloadRewarded();}
+		});
+
+		Log.d(TAG,"Load Rewarded End");
+	}
+
+	static public void showRewarded() {
+		Log.d(TAG,"Show Rewarded Begin");
+		if(rewardedId.isEmpty()) return;
+		mainActivity.runOnUiThread(new Runnable() {
+			public void run() {	if(rewarded != null) rewarded.show(mainActivity, rewardItem -> {
+				callback.call("onAdmobRewardEvent", new Object[] {rewardItem.getType(), rewardItem.getAmount()});
+			});	}
+		});
+		Log.d(TAG,"Show Rewarded End");
 	}
 
 	static public void showBanner() {
@@ -299,6 +326,10 @@ public class AdMobEx extends Extension {
 						if(!interstitialId.isEmpty()){
 							reloadInterstitial();
 						}
+
+						if(!rewardedId.isEmpty()){
+							reloadRewarded();
+						}
 					}
 				});
             }
@@ -351,6 +382,67 @@ public class AdMobEx extends Extension {
 		{
 			super.onAdClicked();
 			callback.call("onAdmobAdEvent", new Object[] {"interstitial", "click"});
+		}
+
+		@Override
+		public void onAdFailedToShowFullScreenContent(@NonNull AdError adError)
+		{
+			super.onAdFailedToShowFullScreenContent(adError);
+		}
+
+		@Override
+		public void onAdImpression()
+		{
+			super.onAdImpression();
+		}
+	};
+
+	private static RewardedAdLoadCallback rewardedAdLoadCallback = new RewardedAdLoadCallback()
+	{
+		@Override
+		public void onAdLoaded(@NonNull RewardedAd rewardedAd)
+		{
+			super.onAdLoaded(rewardedAd);
+			rewarded = rewardedAd;
+			rewarded.setFullScreenContentCallback(rewardedContentCallback);
+			callback.call("onAdmobAdEvent", new Object[] {"rewarded", "load"});
+			Log.d(TAG,"Received Rewarded!");
+		}
+
+		@Override
+		public void onAdFailedToLoad(@NonNull LoadAdError loadAdError)
+		{
+			super.onAdFailedToLoad(loadAdError);
+			rewarded = null;
+			callback.call("onAdmobAdEvent", new Object[] {"rewarded", "fail"});
+			//reloadRewarded();
+			Log.e(TAG,"Fail to get Rewarded: "+loadAdError);
+		}
+	};
+
+	private static FullScreenContentCallback rewardedContentCallback = new FullScreenContentCallback()
+	{
+		@Override
+		public void onAdShowedFullScreenContent()
+		{
+			super.onAdShowedFullScreenContent();
+			callback.call("onAdmobAdEvent", new Object[] {"rewarded", "open"});
+		}
+
+		@Override
+		public void onAdDismissedFullScreenContent()
+		{
+			super.onAdDismissedFullScreenContent();
+			//reloadRewarded();
+			callback.call("onAdmobAdEvent", new Object[] {"rewarded", "close"});
+			Log.d(TAG,"Dismiss Rewarded");
+		}
+
+		@Override
+		public void onAdClicked()
+		{
+			super.onAdClicked();
+			callback.call("onAdmobAdEvent", new Object[] {"rewarded", "click"});
 		}
 
 		@Override
@@ -460,6 +552,19 @@ public class AdMobEx extends Extension {
         }
 		InterstitialAd.load(mainContext, interstitialId, buildAdReq(), interstitialAdLoadCallback);
     }
+
+	public static void reloadRewarded(){
+		if(rewardedId.isEmpty()) return;
+		//if(loadingRewarded) return;
+		Log.d(TAG,"Reload Rewarded");
+		if(!consentChecked)
+		{
+			callback.call("onAdmobAdEvent", new Object[] {"rewarded", "fail"});
+			Log.e(TAG,"Fail to get Rewarded: User consent hasn't been checked yet");
+			return;
+		}
+		RewardedAd.load(mainContext, rewardedId, buildAdReq(), rewardedAdLoadCallback);
+	}
     
     static public void reloadBanner(){
         if(bannerId.isEmpty()) return;
