@@ -11,6 +11,7 @@ import com.stencyl.Config;
 import com.stencyl.Engine;
 import com.stencyl.Extension;
 import com.stencyl.event.Event;
+import com.stencyl.models.Scene;
 import com.stencyl.utils.Utils;
 
 using com.stencyl.event.EventDispatcher;
@@ -78,8 +79,8 @@ class AdMob extends Extension
 	#end
 
 	//stencyl events
-	public var adEvent:Event<(AdEventData)->Void> = new Event<(AdEventData)->Void>();
-	public var rewardEvent:Event<(rewardType:String, rewardAmount:Float)->Void> = new Event<(String,Float)->Void>();
+	public var adEvent:Event<(AdEventData)->Void>;
+	public var rewardEvent:Event<(rewardType:String, rewardAmount:Float)->Void>;
 	public var nativeEventQueue:Array<AdEventData> = [];
 	
 	///////////////////////////////////////////////////////////////////////////
@@ -459,6 +460,18 @@ class AdMob extends Extension
 	}
 
 	//Extension
+	public override function loadScene(scene:Scene)
+	{
+		adEvent = new Event<(AdEventData)->Void>();
+		rewardEvent = new Event<(String,Float)->Void>();
+	}
+	
+	public override function cleanupScene()
+	{
+		adEvent = null;
+		rewardEvent = null;
+	}
+
 	public override function preSceneUpdate()
 	{
 		for(event in nativeEventQueue)
