@@ -25,4 +25,8 @@
 
 	</section>
 	
+	<section unless="${enableAdmobAds}">
+		<source path="src-stub" />
+	</section>
+	
 </extension>
