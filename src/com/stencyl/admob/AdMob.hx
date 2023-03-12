@@ -366,6 +366,30 @@ class AdMob extends Extension
 	}
 
 	//Called from Design Mode
+	public static function reinitBanner()
+	{
+		debugLog('reinitBanner()');
+		var bannerId = 
+			#if testing if(AdmobConfig.enableTestAds) testBannerKey else #end
+			#if android AdmobConfig.androidBannerKey
+			#elseif ios AdmobConfig.iosBannerKey
+			#end;
+		if(bannerId != "")
+		{
+
+			tryRun(() -> {
+				if(bannerRef != NULL_FOREIGN_REF)
+				{
+					__disposeBanner(bannerRef);
+					__clearReference(bannerRef);
+				}
+				bannerRef = __initBanner(bannerId, bannerShouldBeVisible, bannerPosition, new BannerListener());
+			});
+			reloadBanner();
+		}
+	}
+
+	//Called from Design Mode
 	public static function loadInterstitial()
 	{
 		debugLog('loadInterstitial()');

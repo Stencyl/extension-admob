@@ -250,7 +250,7 @@
     </block>
     
     <block tag="admob-reinit-banner"
-           code="com.stencyl.admob.AdMob.onResize();"
+           code="com.stencyl.admob.AdMob.reinitBanner();"
            type="action"
            returns="void"
            category="mobile"
