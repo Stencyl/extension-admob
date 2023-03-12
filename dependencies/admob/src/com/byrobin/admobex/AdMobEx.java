@@ -154,7 +154,7 @@ public class AdMobEx extends Extension
 					callbacks.call("onConsentInfoUpdateSuccess", new Object[] {formAvailable});
 				},
 				formError ->
-					callbacks.call("onConsentInfoUpdateFailure", new Object[] {formError.toString()})
+					callbacks.call("onConsentInfoUpdateFailure", new Object[] {printFormError(formError)})
 				);
 		});
 	}
@@ -173,7 +173,7 @@ public class AdMobEx extends Extension
 					callbacks.call("onConsentFormLoadSuccess", new Object[] {});
 				},
 				formError ->
-					callbacks.call("onConsentFormLoadFailure", new Object[] {formError.toString()})
+					callbacks.call("onConsentFormLoadFailure", new Object[] {printFormError(formError)})
 				);
 		});
 	}
@@ -187,9 +187,14 @@ public class AdMobEx extends Extension
 			consentForm.show(
 				mainActivity,
 				formError ->
-					callbacks.call("onConsentFormDismissed", new Object[] {formError == null ? "" : formError.toString()})
+					callbacks.call("onConsentFormDismissed", new Object[] {formError == null ? "" : printFormError(formError)})
 				);
 		});
+	}
+
+	private static String printFormError(FormError formError)
+	{
+		return "Form Error ("+formError.getErrorCode() + "): " + formError.getMessage();
 	}
 
 	@SuppressWarnings("unused") /* Called from Haxe */
