@@ -1,32 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <extension>
-	<section if="${enableAdmobAds}">
-		<source path="src" />
-		
-		<section if="android">
-			<setenv name="ADMOB_APP_ID" value="${androidAppID}" />
-			
-	        <dependency name="admob" path="dependencies/admob" />
-	        
-	        <android extension="com.byrobin.admobex.AdMobEx" />
-		</section>
-
-		<section if="ios">
-			<setenv name="ADMOB_APP_ID" value="${iosAppID}" />
-			
-			<config:ios>
-				<cocoapod name="Google-Mobile-Ads-SDK" version="9.14.0" />
-				<!-- UMP is included in the above, specifying a version here to hopefully pin it so it can be referenced in Build.xml as well -->
-				<cocoapod name="GoogleUserMessagingPlatform" version="2.0.1" />
-			</config:ios>
-			
-			<template path="templates" />
-		</section>
-
-	</section>
+	<source path="src" />
 	
-	<section unless="${enableAdmobAds}">
-		<source path="src-stub" />
+	<section if="android">
+		<setenv name="ADMOB_APP_ID" value="${androidAppID}" />
+		
+        <dependency name="admob" path="dependencies/admob" />
+        
+        <android extension="com.byrobin.admobex.AdMobEx" />
+	</section>
+
+	<section if="ios">
+		<setenv name="ADMOB_APP_ID" value="${iosAppID}" />
+		
+		<config:ios>
+			<cocoapod name="Google-Mobile-Ads-SDK" version="9.14.0" />
+			<!-- UMP is included in the above, specifying a version here to hopefully pin it so it can be referenced in Build.xml as well -->
+			<cocoapod name="GoogleUserMessagingPlatform" version="2.0.1" />
+		</config:ios>
+		
+		<template path="templates" />
 	</section>
 	
 </extension>
