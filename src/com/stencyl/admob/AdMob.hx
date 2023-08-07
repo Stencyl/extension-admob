@@ -157,7 +157,7 @@ class AdMob extends Extension
 
 	private static inline function debugLog(msg:String, ?pos:haxe.PosInfos)
 	{
-		if(debugLogs) trace(msg, pos);
+		if(debugLogs) haxe.Log.trace(msg, pos);
 	}
 	
 	////////////////////////////////////////////////////////////////////////////
