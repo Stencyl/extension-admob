@@ -336,6 +336,7 @@ static bool loggingEnabled = false;
 
 @implementation AdmInterstitial {
     GADInterstitialAd *ad;
+    AdmFullScreenContent *contentCallback;
 }
 
 - (instancetype)initWithAd:(GADInterstitialAd *)_ad
@@ -353,8 +354,9 @@ static bool loggingEnabled = false;
     [ad presentFromRootViewController:[[[UIApplication sharedApplication] keyWindow] rootViewController]];
 }
 
-- (void)setFullScreenContentCallback:(AdmFullScreenContent *)contentCallback
+- (void)setFullScreenContentCallback:(AdmFullScreenContent *)_contentCallback
 {
+    contentCallback = _contentCallback;
     ad.fullScreenContentDelegate = contentCallback;
 }
 
@@ -362,6 +364,7 @@ static bool loggingEnabled = false;
 
 @implementation AdmRewarded {
     GADRewardedAd *ad;
+    AdmFullScreenContent *contentCallback;
 }
 
 - (instancetype)initWithAd:(GADRewardedAd *)_ad
@@ -386,8 +389,9 @@ static bool loggingEnabled = false;
     }];
 }
 
-- (void)setFullScreenContentCallback:(AdmFullScreenContent *)contentCallback
+- (void)setFullScreenContentCallback:(AdmFullScreenContent *)_contentCallback
 {
+    contentCallback = _contentCallback;
     ad.fullScreenContentDelegate = contentCallback;
 }
 
@@ -395,6 +399,7 @@ static bool loggingEnabled = false;
 
 @implementation AdmRewardedInterstitial {
     GADRewardedInterstitialAd *ad;
+    AdmFullScreenContent *contentCallback;
 }
 
 - (instancetype)initWithAd:(GADRewardedInterstitialAd *)_ad
@@ -419,8 +424,9 @@ static bool loggingEnabled = false;
     }];
 }
 
-- (void)setFullScreenContentCallback:(AdmFullScreenContent *)contentCallback
+- (void)setFullScreenContentCallback:(AdmFullScreenContent *)_contentCallback
 {
+    contentCallback = _contentCallback;
     ad.fullScreenContentDelegate = contentCallback;
 }
 
