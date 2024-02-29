@@ -211,10 +211,10 @@ class AdMob extends Extension
 	}
 
 	//OnConsentInfoUpdateListener
-	public function onConsentInfoUpdateSuccess(formAvailable:Bool):Void
+	public function onConsentInfoUpdateSuccess(formAvailable:Bool, consentStatus:String):Void
 	{
-		debugLog('onConsentInfoUpdateSuccess($formAvailable)');
-		if(formAvailable)
+		debugLog('onConsentInfoUpdateSuccess($formAvailable, $consentStatus)');
+		if(formAvailable && (alwaysShowConsentForm || consentStatus == "required"))
 		{
 			tryRun(() -> __loadConsentForm(instance));
 		}

@@ -150,14 +150,28 @@ public class AdMobEx extends Extension
 				mainActivity,
 				params,
 				() -> {
-					boolean formAvailable = UserMessagingPlatform.getConsentInformation(mainContext).isConsentFormAvailable();
-					callbacks.call("onConsentInfoUpdateSuccess", new Object[] {formAvailable});
+					ConsentInformation consentInfo = UserMessagingPlatform.getConsentInformation(mainContext);
+					boolean formAvailable = consentInfo.isConsentFormAvailable();
+					String consentStatus = consentStatusToString(consentInfo.getConsentStatus());
+					callbacks.call("onConsentInfoUpdateSuccess", new Object[] {formAvailable, consentStatus});
 				},
 				formError ->
 					callbacks.call("onConsentInfoUpdateFailure", new Object[] {printFormError(formError)})
 				);
 		});
 	}
+
+	private String consentStatusToString(int consentStatus)
+    {
+    	switch(consentStatus)
+    	{
+    		case UNKNOWN: return "unknown";
+	        case REQUIRED: return "required";
+	        case NOT_REQUIRED: return "not_required";
+	        case OBTAINED: return "obtained";
+	        default: return "";
+    	}
+    }
 
 	@SuppressWarnings("unused") /* Called from Haxe */
 	public void loadConsentForm(HaxeObject callbacks)

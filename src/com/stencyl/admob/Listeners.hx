@@ -2,7 +2,7 @@ package com.stencyl.admob;
 
 interface OnConsentInfoUpdateListener
 {
-    public function onConsentInfoUpdateSuccess(formAvailable:Bool):Void;
+    public function onConsentInfoUpdateSuccess(formAvailable:Bool, consentStatus:String):Void;
     public function onConsentInfoUpdateFailure(formError:String):Void;
 }
 

@@ -485,6 +485,7 @@ namespace admobex {
 
     //forward declarations
     NSString *admobDeviceID();
+    NSString *consentStatusToString(UMPConsentStatus consentStatus);
     void applyUmpDebugGeography(UMPDebugSettings* debugSettings, const char *value);
     void applyUmpTagForUnderAgeOfConsent(UMPRequestParameters* params, const char *value);
     void applyGadTagForChildDirectedTreatment(GADRequestConfiguration* requestConfig, const char *value);
@@ -550,10 +551,25 @@ namespace admobex {
             if (error) {
                 val_ocall1(callbacks->get(), _id_onConsentInfoUpdateFailure, alloc_string([[error localizedDescription] UTF8String]));
             } else {
+                UMPConsentStatus consentStatus = UMPConsentInformation.sharedInstance.consentStatus;
                 UMPFormStatus formStatus = UMPConsentInformation.sharedInstance.formStatus;
-                val_ocall1(callbacks->get(), _id_onConsentInfoUpdateSuccess, alloc_bool(formStatus == UMPFormStatusAvailable));
+                val_ocall2(callbacks->get(), _id_onConsentInfoUpdateSuccess,
+                    alloc_bool(formStatus == UMPFormStatusAvailable),
+                    alloc_string([consentStatusToString(consentStatus) UTF8String]));
             }
         }];
+    }
+
+    NSString *consentStatusToString(UMPConsentStatus consentStatus)
+    {
+        switch(consentStatus)
+        {
+            case UMPConsentStatusUnknown: return @"unknown";
+            case UMPConsentStatusRequired: return @"required";
+            case UMPConsentStatusNotRequired: return @"not_required";
+            case UMPConsentStatusObtained: return @"obtained";
+            default: return @"";
+        }
     }
 
     void applyUmpDebugGeography(UMPDebugSettings* debugSettings, const char *value)
