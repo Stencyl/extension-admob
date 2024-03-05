@@ -165,11 +165,11 @@ public class AdMobEx extends Extension
     {
     	switch(consentStatus)
     	{
-    		case UNKNOWN: return "unknown";
-	        case REQUIRED: return "required";
-	        case NOT_REQUIRED: return "not_required";
-	        case OBTAINED: return "obtained";
-	        default: return "";
+    		case ConsentInformation.ConsentStatus.UNKNOWN:      return "unknown";
+	        case ConsentInformation.ConsentStatus.REQUIRED:     return "required";
+	        case ConsentInformation.ConsentStatus.NOT_REQUIRED: return "not_required";
+	        case ConsentInformation.ConsentStatus.OBTAINED:     return "obtained";
+	        default:                                            return "";
     	}
     }
 
