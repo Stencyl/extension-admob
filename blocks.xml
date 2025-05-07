@@ -114,8 +114,9 @@
             <dropdown order="0">
                 <choices>
                     <c text="@debugGeography.eea"      code="eea" />
-                    <c text="@debugGeography.not_eea"  code="not_eea" />
+                    <c text="@debugGeography.other"    code="other" />
                     <c text="@debugGeography.disabled" code="" />
+                    <c text="@debugGeography.reg_us"   code="reg_us" />
                 </choices>
             </dropdown>
         </fields>

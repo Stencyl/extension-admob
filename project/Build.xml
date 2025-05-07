@@ -12,8 +12,8 @@
   <depend name="${this_dir}/include/AdMobEx.h" />
 </files>
 
-<cocoapod name="Google-Mobile-Ads-SDK" version="9.14.0" />
-<cocoapod name="GoogleUserMessagingPlatform" version="2.0.1" />
+<cocoapod name="Google-Mobile-Ads-SDK" version="12.3.0" />
+<cocoapod name="GoogleUserMessagingPlatform" version="3.0.0" />
 
 <files id="${id}-ios" dir="${this_dir}">
   <depend files="${id}-dependencies" />

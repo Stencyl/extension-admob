@@ -575,7 +575,8 @@ namespace admobex {
     void applyUmpDebugGeography(UMPDebugSettings* debugSettings, const char *value)
     {
         if     (strcmp(value, "eea")      == 0) debugSettings.geography = UMPDebugGeographyEEA;
-        else if(strcmp(value, "not_eea")  == 0) debugSettings.geography = UMPDebugGeographyNotEEA;
+        else if(strcmp(value, "other")    == 0) debugSettings.geography = UMPDebugGeographyOther;
+        else if(strcmp(value, "reg_us")   == 0) debugSettings.geography = UMPDebugGeographyRegulatedUSState;
         else if(strcmp(value, "disabled") == 0) debugSettings.geography = UMPDebugGeographyDisabled;
         //do nothing for ""
     }
@@ -646,15 +647,15 @@ namespace admobex {
 
     void applyGadTagForChildDirectedTreatment(GADRequestConfiguration* requestConfig, const char *value)
     {
-        if     (strcmp(value, "true")  == 0) [requestConfig tagForChildDirectedTreatment:true];
-        else if(strcmp(value, "false") == 0) [requestConfig tagForChildDirectedTreatment:false];
+        if     (strcmp(value, "true")  == 0) requestConfig.tagForChildDirectedTreatment = @YES;
+        else if(strcmp(value, "false") == 0) requestConfig.tagForChildDirectedTreatment = @NO;
         //do nothing for ""
     }
 
     void applyGadTagForUnderAgeOfConsent(GADRequestConfiguration* requestConfig, const char *value)
     {
-        if     (strcmp(value, "true")  == 0) [requestConfig tagForUnderAgeOfConsent:true];
-        else if(strcmp(value, "false") == 0) [requestConfig tagForUnderAgeOfConsent:false];
+        if     (strcmp(value, "true")  == 0) requestConfig.tagForUnderAgeOfConsent = @YES;
+        else if(strcmp(value, "false") == 0) requestConfig.tagForUnderAgeOfConsent = @NO;
         //do nothing for ""
     }
 
