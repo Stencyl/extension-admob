@@ -14,9 +14,9 @@
 		<setenv name="ADMOB_APP_ID" value="${iosAppID}" />
 		
 		<config:ios>
-			<cocoapod name="Google-Mobile-Ads-SDK" version="12.3.0" />
+			<cocoapod name="Google-Mobile-Ads-SDK" version="11.5.0" />
 			<!-- UMP is included in the above, specifying a version here to hopefully pin it so it can be referenced in Build.xml as well -->
-			<cocoapod name="GoogleUserMessagingPlatform" version="3.0.0" />
+			<cocoapod name="GoogleUserMessagingPlatform" version="2.7.0" />
 		</config:ios>
 		
 		<template path="templates" />
